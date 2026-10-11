@@ -121,6 +121,10 @@ from it), then run `memcrumbs update` once: it finishes the upgrade by re-indexi
 each project, and a second run changes nothing. Until then the session header and `doctor` say the upgrade is
 not finished. Running `memcrumbs init` in the repo does the same for one project.
 
+On Windows, upgrading from 0.4.1 or older: run `python -m memcrumbs update` once. Those versions cannot replace
+the running `memcrumbs.exe` when Python's Scripts folder and %TEMP% are on different drives. Later versions move
+their launcher out of pip's way first.
+
 The wiki is plain markdown and an upgrade never rewrites it. To roll back, run
 `memcrumbs -p <project> wire --remove --apply` and reinstall the previous version.
 

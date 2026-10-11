@@ -10,7 +10,15 @@ any pip run, a new process checks that `python -m memcrumbs --version` still sta
 
 The message gives pip's own `ERROR:` line (its last line is often only a hint), and pip's full output, redacted, is
 kept in the first project's data folder as `update.log`. On Windows a permission failure is retried once after a
-short pause. This module is imported before pip runs: once pip has removed the package, nothing can be imported."""
+short pause. This module is imported before pip runs: once pip has removed the package, nothing can be imported.
+
+On Windows, pip moves the old launchers (`memcrumbs.exe`, `memcrumb.exe`) into %TEMP% before it writes new ones.
+When %TEMP% is on another drive than the Scripts folder, that move is a copy and a delete, and Windows refuses to
+delete the launcher that is running `update`. So the launchers are first renamed within their own folder, which
+Windows allows while one runs, and pip has nothing to move. Afterwards a launcher pip did not write again is renamed
+back, and the replaced copies are deleted; the one still running is deleted by the next `update`."""
+import csv
+import os
 import re
 import subprocess
 import sys
@@ -91,9 +99,62 @@ def _log(project, runs):
     return " pip's output: %s." % posix(path)
 
 
+def launchers(site=None):
+    """memcrumbs' own launchers, as its install record lists them: the files pip replaces in the Scripts folder.
+
+    The record is read directly. importlib.metadata would scan sys.path, and under a launcher sys.path[0] is the
+    launcher itself, a zip archive that the scan keeps open: then nothing can rename it."""
+    site = Path(site) if site else Path(__file__).resolve().parent.parent
+    try:
+        with open(site / ("memcrumbs-%s.dist-info" % __version__) / "RECORD", encoding="utf-8", newline="") as f:
+            rows = [row[0] for row in csv.reader(f) if row]
+    except OSError:
+        return []
+    found = [(site / row).resolve() for row in rows if row.lower().endswith(".exe")]
+    return [p for p in found if p.is_file()]
+
+
+def aside(paths):
+    """Rename each launcher within its folder, after deleting the copies an earlier update left. Returns the moves."""
+    moved = []
+    for p in paths:
+        for old in p.parent.glob(p.name + ".old-*"):
+            try:
+                old.unlink()
+            except OSError:
+                pass                                # still running: the next update deletes it
+        old = p.with_name("%s.old-%d" % (p.name, os.getpid()))
+        try:
+            os.replace(p, old)
+        except OSError:
+            continue
+        moved.append((p, old))
+    return moved
+
+
+def settle(moved):
+    """A launcher pip did not write again goes back; a replaced copy is deleted, unless it is the one running."""
+    for p, old in moved:
+        try:
+            if p.exists():
+                old.unlink()
+            else:
+                os.replace(old, p)
+        except OSError:
+            pass
+
+
 def install(out, how, cmd, latest, project=None):
     """Run the upgrade, then check in a new process that memcrumbs starts. Returns the installed version; raises
     SystemExit, with what was checked, when the upgrade did not happen."""
+    moved = aside(launchers()) if how == "pip" and windows() else []
+    try:
+        return _install(out, how, cmd, latest, project)
+    finally:
+        settle(moved)
+
+
+def _install(out, how, cmd, latest, project):
     code, output = run_installer(cmd)
     runs = [(cmd, code, output)]
     if code and windows() and PERMISSION.search(output):

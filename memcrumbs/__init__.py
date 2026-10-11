@@ -3,4 +3,4 @@
 Layers: core (this package: wiki, index, outline, checks) -> packs (memcrumbs.packs.*: reusable domain add-ons)
 -> project (<projects_dir>/<name>/: memcrumbs.toml, wiki/, plugins/ tailored to one project).
 """
-__version__ = "0.4.1"
+__version__ = "0.4.2"

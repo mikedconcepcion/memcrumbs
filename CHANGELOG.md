@@ -3,6 +3,20 @@
 What changed for users, newest first. Versions follow [semver](https://semver.org/) from 1.0; before 1.0 the
 command line and config may still change, and every such change is listed here.
 
+## [0.4.2] — 2026-10-12
+
+### Fixed
+
+- **On Windows, `memcrumbs update` works through the `memcrumbs` command when Python's Scripts folder and %TEMP%
+  are on different drives**, for example a Python folder that is a junction to another drive. pip could not move
+  the running launcher across drives, so every upgrade failed there.
+  - `update` now renames its launchers within their folder before pip runs, so pip has nothing to move.
+  - The launcher that is still running stays as `memcrumbs.exe.old-…` until the next `update` deletes it.
+  - **Upgrading from 0.4.1 or older on Windows:** run `python -m memcrumbs update` once.
+- **`doctor` names the `~emcrumbs` folders a failed upgrade left in site-packages.** pip warns "Ignoring invalid
+  distribution" until they are deleted.
+- **Loading a pack by entry point no longer holds the `memcrumbs` launcher open.**
+
 ## [0.4.1] — 2026-10-11
 
 ### Fixed

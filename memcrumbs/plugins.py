@@ -6,6 +6,8 @@ plugin (<project>/plugins/*.py) exposes `register(api)`. memcrumbs.toml lists th
 A plugin that fails to load is reported by `status` and `check`; it never stops a command."""
 import importlib
 import importlib.util
+import os
+import sys
 from pathlib import Path
 
 from memcrumbs import markdown, outline, writeset
@@ -66,11 +68,14 @@ class Api:
 
 
 def _entry_point(name):
-    """Scanning entry points reads every installed distribution (slow), so it is the last resort."""
+    """Scanning entry points reads every installed distribution (slow), so it is the last resort. Only folders on
+    sys.path are scanned: under a console-script launcher sys.path[0] is the launcher, a zip archive the scan would
+    keep open, and `update` could then not move it out of pip's way."""
     import importlib.metadata
-    for ep in importlib.metadata.entry_points(group=GROUP):
-        if ep.name == name:
-            return ep.load()
+    for dist in importlib.metadata.distributions(path=[p for p in sys.path if os.path.isdir(p or ".")]):
+        for ep in dist.entry_points:
+            if ep.group == GROUP and ep.name == name:
+                return ep.load()
     raise ModuleNotFoundError("no pack %r (not memcrumbs.packs.%s, nor an entry point in %s)" % (name, name, GROUP))
 
 

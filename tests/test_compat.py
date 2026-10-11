@@ -4,6 +4,8 @@ import io
 import json
 import sqlite3
 import subprocess
+import sys
+import zipfile
 from pathlib import Path
 from unittest import mock
 
@@ -53,6 +55,30 @@ class V01Upgrade(ProjectCase):
         run(["-p", "t", "index"])
         self.assertIn("quokka", run(["-p", "t", "find", "quokka"])[1])
         self.assertIn("lint findings:", run(["-p", "t", "status"])[1])
+
+    def test_an_entry_point_pack_loads_and_a_launcher_on_sys_path_is_not_opened(self):
+        site = Path(self.tmp.name) / "site"
+        (site / "zpack-1.0.dist-info").mkdir(parents=True)
+        (site / "zpack-1.0.dist-info" / "METADATA").write_text("Name: zpack\nVersion: 1.0\n", encoding="utf-8")
+        (site / "zpack-1.0.dist-info" / "entry_points.txt").write_text("[memcrumbs.packs]\nzpack = zpackmod\n",
+                                                                        encoding="utf-8")
+        (site / "zpackmod.py").write_text("def register(api):\n    api.add_status(lambda p: ['zpack here'])\n",
+                                          encoding="utf-8")
+        launcher = Path(self.tmp.name) / "memcrumbs.exe"                     # a console script runs as a zip
+        with zipfile.ZipFile(launcher, "w") as z:
+            z.writestr("__main__.py", "")
+        (self.projects / "t" / "memcrumbs.toml").write_text('name = "t"\nplugins = ["zpack"]\n', encoding="utf-8")
+        opened = []
+        real = zipfile.ZipFile.__init__
+
+        def watch(zf, file, *a, **kw):
+            opened.append(str(file))
+            return real(zf, file, *a, **kw)
+        with mock.patch.object(sys, "path", [str(launcher), str(site)] + sys.path), \
+                mock.patch.object(zipfile.ZipFile, "__init__", watch):
+            api = plugins.load(proj.resolve("t"))
+        self.assertEqual(api.errors, [])
+        self.assertNotIn(str(launcher), opened)
 
     def test_a_plugin_that_stops_loading_is_named_and_its_files_kept_until_it_leaves_the_config(self):
         pdir = self.projects / "t"

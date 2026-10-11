@@ -159,9 +159,16 @@ class SafeInstall(ProjectCase):
               "'C:\\venv\\Lib\\site-packages\\memcrumbs\\cli.py'\n"
               "Consider using the `--user` option or check the permissions.\n")
 
-    def update(self, pip=(1,), starts=(None,), restore=0, windows=False):
-        """pip's exit codes in turn; what `--version` reports in turn (None: memcrumbs does not start)."""
+    def update(self, pip=(1,), starts=(None,), restore=0, windows=False, launchers=(), seen=None):
+        """pip's exit codes in turn; what `--version` reports in turn (None: memcrumbs does not start). An install
+        that succeeds writes new `launchers`; `seen` collects what pip found in their folder when it ran."""
         calls, pips, versions = [], list(pip), list(starts)
+
+        def pip_ran(code):
+            if seen is not None and launchers:
+                seen.append(sorted(f.name for f in launchers[0].parent.iterdir()))
+            for f in launchers if code == 0 else ():
+                f.write_bytes(b"new launcher")
 
         def fake(argv, **kw):
             if argv and argv[0] == "git":
@@ -172,16 +179,19 @@ class SafeInstall(ProjectCase):
                 return SimpleNamespace(returncode=0 if v else 1, stdout="memcrumbs %s\n" % v if v else "",
                                        stderr="" if v else "ModuleNotFoundError: No module named 'memcrumbs'\n")
             if any(a.startswith("memcrumbs==") for a in argv):
+                pip_ran(restore)
                 return SimpleNamespace(returncode=restore, stdout="",
                                        stderr="ERROR: No matching distribution\n" if restore else "")
             if argv[1:3] == ["-m", "memcrumbs"]:
                 return SimpleNamespace(returncode=0, stdout="ok\n", stderr="")
             code = pips.pop(0) if len(pips) > 1 else pips[0]
+            pip_ran(code)
             return SimpleNamespace(returncode=code, stdout="", stderr=self.DENIED if code else "")
         out, said, code = io.StringIO(), "", 0
         with pypi("9.9.9"), mock.patch.object(update, "installer", return_value=("pip", PIP)), \
                 mock.patch.object(update.subprocess, "run", side_effect=fake), \
                 mock.patch.object(update_install, "windows", return_value=windows), \
+                mock.patch.object(update_install, "launchers", return_value=list(launchers)), \
                 mock.patch.object(update_install.time, "sleep"), contextlib.redirect_stdout(out):
             try:
                 cli.main(["update"])
@@ -224,6 +234,65 @@ class SafeInstall(ProjectCase):
         self.assertIn("installed: memcrumbs 9.9.9 (checked: it starts)", said)
         _, _, calls = self.update(pip=(1,), starts=(__version__,), windows=False)
         self.assertEqual(calls.count(PIP), 1)                     # elsewhere: no retry
+
+    def scripts(self, *leftovers):
+        """A Scripts folder with memcrumbs' two launchers, and copies an earlier update left."""
+        folder = Path(self.tmp.name) / "Scripts"
+        folder.mkdir()
+        for name in ("memcrumbs.exe", "memcrumb.exe") + leftovers:
+            (folder / name).write_bytes(b"old launcher")
+        (folder / "other.exe").write_bytes(b"not ours")
+        return folder, [folder / "memcrumbs.exe", folder / "memcrumb.exe"]
+
+    def test_windows_moves_the_launchers_out_of_pips_way(self):
+        folder, launchers = self.scripts("memcrumbs.exe.old-1")
+        seen = []
+        code, said, _ = self.update(pip=(0,), starts=("9.9.9",), windows=True, launchers=launchers, seen=seen)
+        self.assertEqual(code, 0, said)
+        self.assertEqual(len(seen), 1)
+        self.assertFalse({"memcrumbs.exe", "memcrumb.exe"} & set(seen[0]))     # nothing for pip to move
+        self.assertNotIn("memcrumbs.exe.old-1", seen[0])                       # an earlier copy is deleted first
+        self.assertEqual(sorted(f.name for f in folder.iterdir()), ["memcrumb.exe", "memcrumbs.exe", "other.exe"])
+        self.assertEqual(launchers[0].read_bytes(), b"new launcher")
+
+    def test_a_launcher_pip_did_not_write_goes_back(self):
+        folder, launchers = self.scripts()
+        code, said, _ = self.update(pip=(1,), starts=(__version__,), windows=True, launchers=launchers)
+        self.assertEqual(code, 1)
+        self.assertIn("still installed and starts (checked)", said)
+        self.assertEqual(sorted(f.name for f in folder.iterdir()), ["memcrumb.exe", "memcrumbs.exe", "other.exe"])
+        self.assertEqual(launchers[0].read_bytes(), b"old launcher")           # the same file, renamed back
+
+    def test_the_launchers_come_from_the_install_record(self):
+        site = Path(self.tmp.name) / "venv" / "Lib" / "site-packages"
+        info = site / ("memcrumbs-%s.dist-info" % __version__)
+        info.mkdir(parents=True)
+        (info / "RECORD").write_text("memcrumbs/__init__.py,sha256=x,1\n../../Scripts/memcrumbs.exe,sha256=x,1\n"
+                                     "../../Scripts/memcrumb.exe,sha256=x,1\n", encoding="utf-8")
+        scripts = site.parent.parent / "Scripts"
+        scripts.mkdir()
+        (scripts / "memcrumbs.exe").write_bytes(b"launcher")                  # memcrumb.exe is gone already
+        self.assertEqual(update_install.launchers(site), [(scripts / "memcrumbs.exe").resolve()])
+        self.assertEqual(update_install.launchers(Path(self.tmp.name) / "elsewhere"), [])
+
+    def test_doctor_names_the_folders_a_failed_upgrade_left(self):
+        site = Path(self.tmp.name) / "site-packages"
+        (site / "~emcrumbs").mkdir(parents=True)
+        (site / "~emcrumbs-0.4.0.dist-info").mkdir()
+        (site / "memcrumbs").mkdir()
+        with mock.patch.object(update_install.sysconfig, "get_paths", return_value={"purelib": str(site)}):
+            said = run(["-p", "t", "doctor"])[1]
+            shared = run(["-p", "t", "doctor", "--share"])[1]
+        self.assertIn("a failed upgrade left ~emcrumbs, ~emcrumbs-0.4.0.dist-info in %s" % site.as_posix(), said)
+        self.assertIn('"pip_stash": 2', shared)
+        self.assertNotIn("~emcrumbs", shared)                                  # shape only: no names, no paths
+        self.assertNotIn(site.name, shared)
+
+    def test_elsewhere_the_launchers_stay_put(self):
+        folder, launchers = self.scripts()
+        seen = []
+        self.update(pip=(0,), starts=("9.9.9",), windows=False, launchers=launchers, seen=seen)
+        self.assertIn("memcrumbs.exe", seen[0])
 
 
 class Notice(ProjectCase):

@@ -226,11 +226,15 @@ def _use(project):
 
 
 def _update(project):
-    from memcrumbs import update
+    from memcrumbs import update, update_install
     done = update.unfinished(project)
     if done:
         yield "warn", "update", "memcrumbs was upgraded to %s; the wiring is from %s: memcrumbs update finishes it " \
             "(index, wire)" % (__version__, done), dict(upgrade_unfinished=True)
+    site, left = update_install.stash()
+    if left:
+        yield "warn", "update", "a failed upgrade left %s in %s, pip's copy of an old memcrumbs: delete them (until " \
+            "then pip warns \"Ignoring invalid distribution\")" % (", ".join(left), posix(site)), dict(pip_stash=len(left))
     if not update.notify_on(project):
         return
     latest = update._stored(project).get("latest")
