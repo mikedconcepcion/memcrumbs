@@ -3,6 +3,21 @@
 What changed for users, newest first. Versions follow [semver](https://semver.org/) from 1.0; before 1.0 the
 command line and config may still change, and every such change is listed here.
 
+## [0.4.1] — 2026-10-11
+
+### Fixed
+
+- **`memcrumbs update` never leaves memcrumbs uninstalled without saying so.** pip can fail halfway, for example
+  when another process holds a file open, and fail to put the old version back. After any pip run, `update` now
+  checks in a new process that memcrumbs starts:
+  - if pip left it uninstalled, `update` reinstalls the version you had and checks again;
+  - if that fails too, it says plainly that memcrumbs is not installed and prints the one command that fixes it;
+  - it no longer says "Nothing else was changed" without checking.
+- **pip's own error is shown** (the file it could not replace), not its closing hint. pip's full output is kept in
+  the project's `.memcrumbs/update.log`, redacted.
+- **On Windows, a permission failure is retried once** after 5 seconds: antivirus and indexers hold new files
+  briefly.
+
 ## [0.4.0] — 2026-10-11
 
 ### Added

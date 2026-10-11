@@ -126,6 +126,10 @@ The wiki is plain markdown and an upgrade never rewrites it. To roll back, run
 
 ## Something wrong?
 
+If `memcrumbs` stops starting after an upgrade (`No module named 'memcrumbs'`), reinstall it with the Python it was
+installed with: `python -m pip install --upgrade memcrumbs`. `memcrumbs update` checks for this and repairs it
+itself, so this is only needed after an upgrade made by hand.
+
 Run `memcrumbs -p <project> doctor --share` and attach its output to a
 [bug report](https://github.com/mikedconcepcion/memcrumbs/issues/new/choose). It holds versions, counts,
 timings and pass/fail only: no paths, names or page text.

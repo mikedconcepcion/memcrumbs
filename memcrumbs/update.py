@@ -9,7 +9,8 @@ memcrumbs makes no network calls of its own, with two exceptions the user choose
 An upgrade uses the tool that installed memcrumbs (pip, pipx or uv). Then, in a new process that runs the new code,
 it re-indexes each project and refreshes, in each repo, the CLAUDE.md or AGENTS.md block, the skill and the allow
 rules that `wire` installed there (only those; `--no-wire` skips it, and `wire --remove` still undoes it byte for
-byte). An editable install or a development build is never upgraded.
+byte). An editable install or a development build is never upgraded. A failed install is checked, and undone
+when it left memcrumbs uninstalled (`update_install`).
 
 After an upgrade made by hand (`pip install --upgrade memcrumbs`, or `git pull` in a checkout), `memcrumbs update`
 runs those same steps once: `wire` records the version that applied the wiring, and an older record means the
@@ -24,7 +25,7 @@ import time
 import urllib.request
 from pathlib import Path
 
-from memcrumbs import __version__, writeset
+from memcrumbs import __version__, update_install, writeset
 
 INDEX = "https://pypi.org/pypi/memcrumbs/json"
 CHANGELOG = "https://github.com/mikedconcepcion/memcrumbs/blob/main/CHANGELOG.md"
@@ -225,12 +226,8 @@ def command(out, args, projects):
         raise SystemExit("memcrumbs: this memcrumbs runs from a %s; upgrade it with git, then run "
                          "memcrumbs update to finish (index, wire)" % how)
     out("upgrading with %s …" % how)
-    r = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=900)
-    if r.returncode:
-        last = (r.stderr.strip() or r.stdout.strip() or "no output").splitlines()[-1]
-        raise SystemExit("memcrumbs: the upgrade failed (%s): %s. Nothing else was changed." % (" ".join(cmd), last))
-    code, version = _run(["--version"], timeout=120)
-    out("installed: %s" % (version if code == 0 else "unknown (run memcrumbs --version)"))
+    version = update_install.install(out, how, cmd, latest, projects[0] if projects else None)
+    out("installed: memcrumbs %s (checked: it starts)" % version)
     after_upgrade(out, projects, rewire=not args.no_wire)
     out("done. Each project: memcrumbs doctor")
     return 0

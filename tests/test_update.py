@@ -1,13 +1,15 @@
 """`memcrumbs update`: version order, the PyPI check, the upgrade path, the opt-in notice, and no network otherwise."""
+import contextlib
 import io
 import json
 import subprocess
+import sys
 import urllib.request
 from pathlib import Path
 from types import SimpleNamespace
 from unittest import mock
 
-from memcrumbs import project as proj, update, wire
+from memcrumbs import __version__, cli, project as proj, update, update_install, wire
 from memcrumbs.output import Out
 from test_cli import ProjectCase, run
 
@@ -149,6 +151,79 @@ class Finish(ProjectCase):
     def test_a_newer_record_is_not_a_downgrade_to_finish(self):
         self.wired_by("99.0.0")
         self.assertIsNone(update.unfinished(proj.resolve("t"), thorough=True))
+
+
+class SafeInstall(ProjectCase):
+    """A failed pip run never leaves memcrumbs uninstalled without saying so, and says only what was checked."""
+    DENIED = ("ERROR: Could not install packages due to an OSError: [WinError 5] Access is denied: "
+              "'C:\\venv\\Lib\\site-packages\\memcrumbs\\cli.py'\n"
+              "Consider using the `--user` option or check the permissions.\n")
+
+    def update(self, pip=(1,), starts=(None,), restore=0, windows=False):
+        """pip's exit codes in turn; what `--version` reports in turn (None: memcrumbs does not start)."""
+        calls, pips, versions = [], list(pip), list(starts)
+
+        def fake(argv, **kw):
+            if argv and argv[0] == "git":
+                return REAL_RUN(argv, **kw)
+            calls.append(list(argv))
+            if "--version" in argv:
+                v = versions.pop(0) if len(versions) > 1 else versions[0]
+                return SimpleNamespace(returncode=0 if v else 1, stdout="memcrumbs %s\n" % v if v else "",
+                                       stderr="" if v else "ModuleNotFoundError: No module named 'memcrumbs'\n")
+            if any(a.startswith("memcrumbs==") for a in argv):
+                return SimpleNamespace(returncode=restore, stdout="",
+                                       stderr="ERROR: No matching distribution\n" if restore else "")
+            if argv[1:3] == ["-m", "memcrumbs"]:
+                return SimpleNamespace(returncode=0, stdout="ok\n", stderr="")
+            code = pips.pop(0) if len(pips) > 1 else pips[0]
+            return SimpleNamespace(returncode=code, stdout="", stderr=self.DENIED if code else "")
+        out, said, code = io.StringIO(), "", 0
+        with pypi("9.9.9"), mock.patch.object(update, "installer", return_value=("pip", PIP)), \
+                mock.patch.object(update.subprocess, "run", side_effect=fake), \
+                mock.patch.object(update_install, "windows", return_value=windows), \
+                mock.patch.object(update_install.time, "sleep"), contextlib.redirect_stdout(out):
+            try:
+                cli.main(["update"])
+            except SystemExit as e:
+                code, said = (1 if e.code else 0), (e.code if isinstance(e.code, str) else "")
+        return code, out.getvalue() + said, calls
+
+    def test_left_uninstalled_the_running_version_is_put_back(self):
+        code, said, calls = self.update(starts=(None, __version__))
+        self.assertEqual(code, 1)
+        self.assertIn("pip failed: ERROR: Could not install packages due to an OSError: [WinError 5] Access is denied",
+                      said)                                       # pip's error, not its closing hint
+        self.assertIn("pip had left memcrumbs uninstalled. memcrumbs %s was reinstalled and starts (checked)"
+                      % __version__, said)
+        self.assertNotIn("Nothing else was changed", said)
+        self.assertIn([sys.executable, "-m", "pip", "install", "--disable-pip-version-check",
+                       "memcrumbs==" + __version__], calls)
+        log = proj.resolve("t").data / "update.log"
+        self.assertIn("Consider using the `--user` option", log.read_text(encoding="utf-8"))   # pip's whole output
+        self.assertIn("pip's output: %s" % log.as_posix(), said)
+
+    def test_when_nothing_can_be_put_back_it_says_so_plainly(self):
+        code, said, _ = self.update(starts=(None,), restore=1)
+        self.assertEqual(code, 1)
+        self.assertIn("memcrumbs is NOT installed now: the session hook in every wired repo fails until you run: "
+                      '"%s" -m pip install --upgrade memcrumbs' % sys.executable, said)
+
+    def test_a_failure_that_left_the_old_version_is_said_as_checked(self):
+        code, said, calls = self.update(starts=(__version__,))
+        self.assertEqual(code, 1)
+        self.assertIn("memcrumbs %s is still installed and starts (checked)" % __version__, said)
+        self.assertFalse(any(a.startswith("memcrumbs==") for c in calls for a in c))     # nothing to put back
+
+    def test_windows_retries_a_permission_failure_once(self):
+        code, said, calls = self.update(pip=(1, 0), starts=("9.9.9",), windows=True)
+        self.assertEqual(code, 0, said)
+        self.assertEqual(calls.count(PIP), 2)
+        self.assertIn("pip failed (ERROR: Could not install packages", said)
+        self.assertIn("trying once more in", said)
+        self.assertIn("installed: memcrumbs 9.9.9 (checked: it starts)", said)
+        _, _, calls = self.update(pip=(1,), starts=(__version__,), windows=False)
+        self.assertEqual(calls.count(PIP), 1)                     # elsewhere: no retry
 
 
 class Notice(ProjectCase):
