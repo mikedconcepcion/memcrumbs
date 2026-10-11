@@ -1,0 +1,515 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>memcrumbs: project memory for coding agents</title>
+<meta name="description" content="An open-source CLI that gives coding agents like Claude Code a project memory: a markdown wiki and a local index that answers in a few hundred tokens.">
+<meta name="keywords" content="coding agent memory, Claude Code, CLAUDE.md, AGENTS.md, project wiki, agent context, token efficiency, SQLite FTS5, BM25 search, code outline, architecture decision records, runbooks, incident postmortems, secret redaction, command-line tool, Python">
+<meta name="author" content="mikedconcepcion">
+<link rel="canonical" href="https://mikedconcepcion.github.io/memcrumbs/">
+<meta property="og:title" content="memcrumbs: project memory for coding agents">
+<meta property="og:description" content="An open-source CLI that gives coding agents like Claude Code a project memory: a markdown wiki and a local index that answers in a few hundred tokens.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://mikedconcepcion.github.io/memcrumbs/">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="memcrumbs: project memory for coding agents">
+<meta name="twitter:description" content="An open-source CLI that gives coding agents like Claude Code a project memory: a markdown wiki and a local index that answers in a few hundred tokens.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<script type="application/ld+json">
+{
+ "@context": "https://schema.org",
+ "@type": "SoftwareApplication",
+ "name": "memcrumbs",
+ "description": "An open-source CLI that gives coding agents like Claude Code a project memory: a markdown wiki and a local index that answers in a few hundred tokens.",
+ "url": "https://mikedconcepcion.github.io/memcrumbs/",
+ "codeRepository": "https://github.com/mikedconcepcion/memcrumbs",
+ "applicationCategory": "DeveloperApplication",
+ "operatingSystem": "Windows, macOS, Linux",
+ "softwareVersion": "0.2.0",
+ "license": "https://www.apache.org/licenses/LICENSE-2.0",
+ "programmingLanguage": "Python",
+ "softwareRequirements": "Python 3.11 or newer",
+ "isAccessibleForFree": true,
+ "offers": {
+  "@type": "Offer",
+  "price": "0",
+  "priceCurrency": "USD"
+ },
+ "author": {
+  "@type": "Person",
+  "name": "mikedconcepcion",
+  "url": "https://github.com/mikedconcepcion",
+  "sameAs": [
+   "https://github.com/mikedconcepcion"
+  ]
+ },
+ "keywords": "coding agent memory, Claude Code, CLAUDE.md, AGENTS.md, project wiki, agent context, token efficiency, SQLite FTS5, BM25 search, code outline, architecture decision records, runbooks, incident postmortems, secret redaction, command-line tool, Python",
+ "datePublished": "2026-10-11",
+ "dateModified": "2026-10-11",
+ "featureList": [
+  "Session header of standing rules under a token cap",
+  "Ranked lookups with path:line, age and status",
+  "Code outlines with line ranges",
+  "Decision and incident records",
+  "Single-sourced facts",
+  "Secret redaction that fails closed",
+  "Byte-exact undo for every change it offers"
+ ]
+}
+</script>
+<script type="application/ld+json">
+{
+ "@context": "https://schema.org",
+ "@type": "FAQPage",
+ "mainEntity": [
+  {
+   "@type": "Question",
+   "name": "What is memcrumbs?",
+   "acceptedAnswer": {
+    "@type": "Answer",
+    "text": "memcrumbs is an open-source command-line tool that gives coding agents a project memory: a markdown wiki of rules, gotchas, runbooks, decisions and incidents, plus a local SQLite full-text index of the wiki, your docs and your code symbols. It is written in Python and uses only the standard library."
+   }
+  },
+  {
+   "@type": "Question",
+   "name": "Does it send my code or notes anywhere?",
+   "acceptedAnswer": {
+    "@type": "Answer",
+    "text": "No. memcrumbs makes no network calls and no model calls, and runs no background service. Your wiki is plain markdown in a folder you choose, and the index is a local SQLite file."
+   }
+  },
+  {
+   "@type": "Question",
+   "name": "Which coding agents does it work with?",
+   "acceptedAnswer": {
+    "@type": "Answer",
+    "text": "Claude Code gets a CLAUDE.md block, a session-start hook and a skill from memcrumbs wire. Other agents can read an AGENTS.md block (wire --target agents), and any agent that can run shell commands can use the commands directly."
+   }
+  },
+  {
+   "@type": "Question",
+   "name": "How is it different from Claude Code's auto-memory?",
+   "acceptedAnswer": {
+    "@type": "Answer",
+    "text": "Auto-memory is notes an agent keeps for itself. memcrumbs keeps a curated wiki with age and status on every answer, searched on demand instead of loaded in full. It can also offer to replace auto-memory notes the wiki already holds with a pointer to the page."
+   }
+  },
+  {
+   "@type": "Question",
+   "name": "Does it use embeddings or a vector database?",
+   "acceptedAnswer": {
+    "@type": "Answer",
+    "text": "No. Search is SQLite FTS5 with BM25 ranking, a small thesaurus, your own synonyms and identifier splitting. On the sample project's held-out questions, 95% of answers are in the top 3 hits."
+   }
+  },
+  {
+   "@type": "Question",
+   "name": "Is it free?",
+   "acceptedAnswer": {
+    "@type": "Answer",
+    "text": "Yes. memcrumbs is open source under the Apache-2.0 license."
+   }
+  }
+ ]
+}
+</script>
+</head>
+<body>
+<style>
+/* Layout: a single long page that reads like a well-kept project wiki. The hero pairs the definition with a real
+   terminal session; sections follow the order a new user asks questions in. A trail of small "crumb" dots marks
+   each section, the one ornament the subject earns. */
+:root {
+  --bg: #f6f8f5;
+  --surface: #ffffff;
+  --ink: #17201b;
+  --muted: #56645b;
+  --line: #d6ded7;
+  --pine: #2b6853;
+  --pine-soft: #dcebe3;
+  --crumb: #b9772a;
+  --term-bg: #13201a;
+  --term-fg: #d8e6dd;
+  --term-dim: #8fa699;
+  --term-hi: #9fd8bd;
+  --display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --body: "IBM Plex Sans", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #101613; --surface: #161e1a; --ink: #e4ebe6; --muted: #9aaba1; --line: #2a352f; --pine: #82c9ad;
+    --pine-soft: #1d342a; --crumb: #e0a35c; --term-bg: #0b120e; --term-fg: #d8e6dd; --term-dim: #85998d;
+    --term-hi: #9fd8bd; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #101613; --surface: #161e1a; --ink: #e4ebe6; --muted: #9aaba1; --line: #2a352f; --pine: #82c9ad;
+  --pine-soft: #1d342a; --crumb: #e0a35c; --term-bg: #0b120e; --term-fg: #d8e6dd; --term-dim: #85998d;
+  --term-hi: #9fd8bd; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 16px/1.65 var(--body); padding-inline: 20px; padding-block: 0 56px; }
+a { color: var(--pine); }
+a:hover { text-decoration-thickness: 2px; }
+:focus-visible { outline: 2px solid var(--pine); outline-offset: 3px; border-radius: 4px; }
+.page { max-width: 1120px; margin-inline: auto; }
+.skip { position: absolute; left: -9999px; }
+.skip:focus { left: 16px; top: 16px; background: var(--surface); padding: 6px 12px; z-index: 9; }
+
+/* top bar */
+.top { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 22px; padding-block: 18px; border-bottom: 1px solid var(--line); }
+.brand { font: 700 20px var(--display); letter-spacing: -.02em; color: var(--ink); text-decoration: none; display: flex; align-items: center; gap: 8px; }
+.brand .dots { display: inline-flex; gap: 3px; }
+.brand .dots i { width: 5px; height: 5px; border-radius: 50%; background: var(--crumb); display: block; }
+.brand .dots i:nth-child(2) { opacity: .65; } .brand .dots i:nth-child(3) { opacity: .35; }
+.top nav { display: flex; flex-wrap: wrap; gap: 4px 18px; margin-left: auto; font-size: 15px; }
+.top nav a { color: var(--muted); text-decoration: none; }
+.top nav a:hover { color: var(--ink); }
+.top nav a.gh { color: var(--ink); font-weight: 500; }
+
+/* hero */
+.hero { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr); gap: 44px; align-items: center; padding-block: 56px 48px; }
+@media (max-width: 900px) { .hero { grid-template-columns: minmax(0, 1fr); gap: 28px; padding-block: 36px 32px; } }
+.eyebrow { font: 500 12.5px var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--crumb); margin: 0 0 14px; }
+h1 { font: 700 clamp(40px, 6vw, 64px)/1.02 var(--display); letter-spacing: -.035em; margin: 0 0 18px; text-wrap: balance; }
+h1 .soft { color: var(--pine); }
+.lede { font-size: 18.5px; line-height: 1.6; color: var(--ink); margin: 0 0 24px; max-width: 34em; }
+.install { display: flex; align-items: center; gap: 0; max-width: 100%; border: 1px solid var(--line); background: var(--surface); border-radius: 8px; overflow: hidden; }
+.install code { flex: 1; min-width: 0; padding: 11px 14px; font: 13.5px var(--mono); white-space: nowrap; overflow-x: auto; }
+.install button { border: 0; border-left: 1px solid var(--line); background: var(--pine-soft); color: var(--pine); font: 600 13px var(--body); padding: 11px 16px; cursor: pointer; }
+.hero-links { display: flex; flex-wrap: wrap; gap: 10px 20px; margin-block: 16px 0; font-size: 15px; }
+.facts-line { display: flex; flex-wrap: wrap; gap: 6px 16px; margin-block: 22px 0; font: 13px var(--mono); color: var(--muted); }
+.facts-line span::before { content: ""; display: inline-block; width: 5px; height: 5px; border-radius: 50%; background: var(--crumb); margin-right: 8px; vertical-align: middle; }
+
+.term { background: var(--term-bg); color: var(--term-fg); border-radius: 10px; font: 12.5px/1.6 var(--mono); overflow: hidden;
+        box-shadow: 0 18px 40px -24px rgba(10, 30, 20, .55); min-width: 0; }
+.term .bar { display: flex; align-items: center; gap: 6px; padding: 9px 14px; background: rgba(255, 255, 255, .05); color: var(--term-dim); font-size: 11.5px; }
+.term .bar .lights { display: flex; gap: 6px; }
+.term .bar i { width: 9px; height: 9px; border-radius: 50%; background: rgba(255, 255, 255, .16); display: block; }
+.term .bar span { margin-left: 8px; }
+.term pre { margin: 0; padding: 14px 16px 16px; overflow-x: auto; white-space: pre; }
+.term .p { color: var(--term-hi); }
+.term .d { color: var(--term-dim); }
+.term .h { color: #f0c27c; }
+
+/* sections */
+section { padding-block: 44px; border-top: 1px solid var(--line); }
+.sec-head { display: flex; align-items: baseline; gap: 12px; margin-bottom: 8px; }
+.sec-head::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--crumb); flex: none; transform: translateY(-3px); }
+h2 { font: 700 clamp(26px, 3.4vw, 34px)/1.15 var(--display); letter-spacing: -.02em; margin: 0; text-wrap: balance; }
+h3 { font: 600 18px/1.3 var(--display); margin: 0 0 6px; letter-spacing: -.01em; }
+.intro { color: var(--muted); max-width: 44em; margin: 6px 0 26px; font-size: 17px; }
+.define { max-width: 46em; font-size: 18px; }
+.define strong { color: var(--pine); }
+
+.grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 28px 34px; }
+@media (max-width: 900px) { .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 600px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+.feature p { margin: 0 0 10px; color: var(--muted); font-size: 15.5px; }
+.feature code, .faq code, .labels code, .define code, td code { font: 13px var(--mono); background: var(--pine-soft); color: var(--ink); padding: 1px 6px; border-radius: 4px; }
+
+.steps { list-style: none; counter-reset: step; padding: 0; margin: 0; display: grid; gap: 22px; }
+.steps li { display: grid; grid-template-columns: 44px minmax(0, 1fr) minmax(0, 1.1fr); gap: 18px; align-items: start; counter-increment: step; }
+.steps li::before { content: counter(step); font: 700 22px var(--display); color: var(--pine); border: 1.5px solid var(--pine); border-radius: 50%;
+                   width: 40px; height: 40px; display: grid; place-items: center; }
+.steps p { margin: 0; color: var(--muted); font-size: 15.5px; }
+.steps .term pre { padding: 10px 14px; font-size: 12px; }
+@media (max-width: 760px) { .steps li { grid-template-columns: 40px minmax(0, 1fr); } .steps li .term { grid-column: 1 / -1; } }
+
+.labels { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 34px; margin: 0; }
+@media (max-width: 680px) { .labels { grid-template-columns: minmax(0, 1fr); } }
+.labels div { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 12px; padding-block: 10px; border-bottom: 1px solid var(--line); }
+.labels dt { font: 500 13px var(--mono); color: var(--crumb); }
+.labels dd { margin: 0; font-size: 15px; color: var(--muted); }
+
+.table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-size: 15px; font-variant-numeric: tabular-nums; }
+th, td { text-align: left; padding: 11px 16px; border-bottom: 1px solid var(--line); vertical-align: top; }
+tr:last-child td { border-bottom: 0; }
+th { font: 600 12.5px var(--body); letter-spacing: .05em; text-transform: uppercase; color: var(--muted); background: var(--bg); }
+td.num { font: 600 18px var(--display); color: var(--ink); white-space: nowrap; }
+td.how { color: var(--muted); font-size: 14px; }
+.note { color: var(--muted); font-size: 14px; margin: 12px 0 0; max-width: 52em; }
+
+.split { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 34px; }
+@media (max-width: 760px) { .split { grid-template-columns: minmax(0, 1fr); } }
+.checks { list-style: none; padding: 0; margin: 0; display: grid; gap: 12px; }
+.checks li { padding-left: 22px; position: relative; color: var(--muted); font-size: 15.5px; }
+.checks li::before { content: ""; position: absolute; left: 2px; top: 10px; width: 8px; height: 8px; border-radius: 2px; background: var(--pine); }
+.checks strong { color: var(--ink); font-weight: 600; }
+
+.faq details { border-bottom: 1px solid var(--line); padding-block: 14px; }
+.faq summary { cursor: pointer; font: 600 17px var(--display); letter-spacing: -.01em; list-style: none; display: flex; gap: 12px; align-items: baseline; }
+.faq summary::-webkit-details-marker { display: none; }
+.faq summary::before { content: "+"; color: var(--pine); font: 600 18px var(--mono); width: 14px; flex: none; }
+.faq details[open] summary::before { content: "–"; }
+.faq p { margin: 8px 0 0 26px; color: var(--muted); max-width: 46em; font-size: 15.5px; }
+
+footer { border-top: 1px solid var(--line); padding-block: 28px 0; display: flex; flex-wrap: wrap; gap: 10px 24px; color: var(--muted); font-size: 14px; }
+footer nav { display: flex; flex-wrap: wrap; gap: 6px 18px; }
+footer .right { margin-left: auto; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<a class="skip" href="#what">Skip to content</a>
+<div class="page">
+  <header class="top">
+    <a class="brand" href="#top" aria-label="memcrumbs home"><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>memcrumbs</a>
+    <nav aria-label="Site">
+      <a href="#what">What it is</a>
+      <a href="#how">How it works</a>
+      <a href="#numbers">Numbers</a>
+      <a href="#start">Quick start</a>
+      <a href="#faq">FAQ</a>
+      <a class="gh" href="https://github.com/mikedconcepcion/memcrumbs">GitHub</a>
+    </nav>
+  </header>
+
+  <main id="top">
+    <div class="hero">
+      <div>
+        <p class="eyebrow">Open source · Apache-2.0 · Python 3.11+</p>
+        <h1>Project memory for <span class="soft">coding agents</span></h1>
+        <p class="lede">memcrumbs is an open-source command-line tool that gives coding agents such as Claude Code a project
+          memory: a small markdown wiki the agent reads before your code, and a local index that answers questions in a few
+          hundred tokens. It uses only Python's standard library and makes no network calls.</p>
+        <div class="install">
+          <code id="install-cmd">pip install git+https://github.com/mikedconcepcion/memcrumbs</code>
+          <button type="button" id="copy-btn">Copy</button>
+        </div>
+        <div class="hero-links">
+          <a href="#start">Quick start</a>
+          <a href="https://github.com/mikedconcepcion/memcrumbs/blob/main/docs/adopting.md">Setup guide</a>
+          <a href="https://github.com/mikedconcepcion/memcrumbs">Source on GitHub</a>
+        </div>
+        <div class="facts-line"><span>no model calls</span><span>no network</span><span>no background service</span><span>Windows · macOS · Linux</span></div>
+      </div>
+
+      <figure class="term" aria-label="A memcrumbs session on the invented sample project">
+        <div class="bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span>sample project · bench/kiln</span></div>
+<pre><span class="d"># the header every session starts with (excerpt)</span>
+<span class="h">Rules (ask before acting against these)</span>
+- Deploying anything to web-srv needs explicit owner approval each time
+- Never delete rows from any production SQLite database
+- Never restart KilnScheduler while a kiln is firing
+
+<span class="p">$</span> memcrumbs find "how do I roll back a bad deploy" -n 2
+[run ] Roll back booking app — wiki/runbooks/rollback-booking.md:1 · v8d
+       …booking [release] in under two minutes by repointing…
+[run ] Deploy booking app — wiki/runbooks/deploy-booking.md:1 · v8d
+<span class="d">read: memcrumbs page rollback-booking</span>
+
+<span class="p">$</span> memcrumbs about repo/ops/EmberOps.psm1
+EmberOps.psm1 — cited by 1 decision (ACCEPTED), 2 incidents, 1 runbook</pre>
+      </figure>
+    </div>
+
+    <section id="what" aria-labelledby="what-h">
+      <div class="sec-head"><h2 id="what-h">What is memcrumbs?</h2></div>
+      <p class="define"><strong>memcrumbs</strong> is a command-line tool that keeps a project's working knowledge (standing
+        rules, gotchas, runbooks, decisions, incidents and a dated journal) in short markdown pages, and indexes those pages,
+        your docs and your code symbols in a local SQLite full-text index. A coding agent reads a header of rules once per
+        session, then looks things up with <code>memcrumbs find</code> instead of grepping and reading whole files.</p>
+      <p class="intro">It sits between an agent's own scratch notes (Claude Code's auto-memory and <code>CLAUDE.md</code>)
+        and a full documentation site, and it borrows from practices teams already use: architecture decision records,
+        runbooks and post-incident reviews.</p>
+
+      <div class="grid">
+        <div class="feature">
+          <h3>Rules first, every session</h3>
+          <p>A header of your standing rules, the project map and the top gotchas is printed when a session starts, under a
+            hard cap of 1,000 tokens by default.</p>
+          <p><code>memcrumbs status</code></p>
+        </div>
+        <div class="feature">
+          <h3>Answers, not file dumps</h3>
+          <p>A lookup returns a few ranked hits with <code>path:line</code>. The agent then opens one section or one
+            function instead of a whole file.</p>
+          <p><code>find</code> · <code>page</code> · <code>outline</code> · <code>sym --body</code></p>
+        </div>
+        <div class="feature">
+          <h3>It knows when it may be wrong</h3>
+          <p>Every hit carries its age and status, and says when the code a page cites changed after the page was last
+            checked.</p>
+          <p><code>v12d</code> · <code>STALE</code> · <code>SRC-CHANGED 3d</code></p>
+        </div>
+        <div class="feature">
+          <h3>What the wiki says about a file</h3>
+          <p>Before an edit, the agent sees the decisions, incidents and gotchas that cite the file, with their
+            verdicts.</p>
+          <p><code>memcrumbs about deploy.ps1</code></p>
+        </div>
+        <div class="feature">
+          <h3>One current value per fact</h3>
+          <p>Versions, ports and hosts live in one table, optionally read from the source file. <code>check</code> flags
+            pages that still state an old value.</p>
+          <p><code>memcrumbs fact booking_version</code></p>
+        </div>
+        <div class="feature">
+          <h3>Offers, never surprises</h3>
+          <p>It suggests merges, missing pages, permission prompts for gotchas and repeated command sequences worth a skill.
+            Each applies only on your yes and undoes byte for byte.</p>
+          <p><code>suggest</code> · <code>suggest undo ID</code></p>
+        </div>
+      </div>
+    </section>
+
+    <section id="how" aria-labelledby="how-h">
+      <div class="sec-head"><h2 id="how-h">How a session goes</h2></div>
+      <p class="intro">After <code>memcrumbs wire</code>, every Claude Code session in the repo follows these four steps. The
+        output below is real, from the invented sample project in the repository.</p>
+      <ol class="steps">
+        <li>
+          <div><h3>The session starts with the header</h3><p>A SessionStart hook prints the rules, the map, the top gotchas and
+            recent journal lines. The agent reads them before it reads any code.</p></div>
+          <figure class="term"><pre><span class="h">memcrumbs · Emberline Ceramics (bench)</span> — 43 pages · index 449 docs
+<span class="d">Look up before reading files: memcrumbs find "&lt;words&gt;"</span></pre></figure>
+        </li>
+        <li>
+          <div><h3>The agent asks the wiki</h3><p>Plain questions work: question words are dropped, a thesaurus bridges
+            vocabulary and identifiers match by their parts.</p></div>
+          <figure class="term"><pre><span class="p">$</span> memcrumbs find "how do I roll back a bad deploy"
+[run ] Roll back booking app — …rollback-booking.md:1 · v8d</pre></figure>
+        </li>
+        <li>
+          <div><h3>It opens only what it needs</h3><p>One section of a page, or one function by its line range. Every cut output
+            names the command that goes deeper.</p></div>
+          <figure class="term"><pre><span class="p">$</span> memcrumbs page rollback-booking
+<span class="p">$</span> memcrumbs sym start_firing --body</pre></figure>
+        </li>
+        <li>
+          <div><h3>It writes down what happened</h3><p>Decisions keep the options considered and the evidence. Incidents are
+            keyed on the symptom the next person will see.</p></div>
+          <figure class="term"><pre><span class="p">$</span> memcrumbs decision "Move bookings to Postgres" \
+    --status rejected --why "too much to run for our size"</pre></figure>
+        </li>
+      </ol>
+    </section>
+
+    <section id="labels" aria-labelledby="labels-h">
+      <div class="sec-head"><h2 id="labels-h">Trust labels on every hit</h2></div>
+      <p class="intro">An agent should know how far to trust what it reads. Each hit says so in a few characters.</p>
+      <dl class="labels">
+        <div><dt>v12d</dt><dd>The page was last verified 12 days ago.</dd></div>
+        <div><dt>STALE</dt><dd>Older than the project's freshness limit (45 days by default).</dd></div>
+        <div><dt>SRC-CHANGED 3d</dt><dd>A file the page cites changed 3 days ago, after the page was verified.</dd></div>
+        <div><dt>SUPERSEDED→page</dt><dd>Replaced by a newer page, and ranked below current ones.</dd></div>
+        <div><dt>REJECTED</dt><dd>A decision that was tried or considered and turned down. Kept, so nobody tries it again.</dd></div>
+        <div><dt>UNREVIEWED</dt><dd>Written by an agent and not yet checked by a person.</dd></div>
+      </dl>
+    </section>
+
+    <section id="numbers" aria-labelledby="numbers-h">
+      <div class="sec-head"><h2 id="numbers-h">Measured, with the method</h2></div>
+      <p class="intro">Numbers from the repository's own benchmarks. You can run every one of them yourself.</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Result</th><th scope="col">What it measures</th><th scope="col">How</th></tr></thead>
+          <tbody>
+            <tr><td class="num">0.95</td><td>Share of questions whose answer is in the top 3 hits (recall@3)</td>
+                <td class="how">40 held-out questions, written by a separate agent that never saw the search engine, on the invented sample project</td></tr>
+            <tr><td class="num">≈ 450</td><td>Tokens per lookup answer</td>
+                <td class="how">Mean over 100 questions on the sample project, estimated as characters ÷ 4</td></tr>
+            <tr><td class="num">5–10 s</td><td>Full index of a 10,000-file repository</td>
+                <td class="how"><code>scripts/perf.py --files 10000</code>: 5 s on Linux CI, about 10 s on a Windows desktop</td></tr>
+            <tr><td class="num">25–100 ms</td><td>One <code>find</code> on that repository</td>
+                <td class="how">Median, in-process, across the same machines</td></tr>
+            <tr><td class="num">3 × 3</td><td>Operating systems × Python versions tested</td>
+                <td class="how">CI on Linux, macOS and Windows with Python 3.11, 3.12 and 3.13</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="note">The sample project is invented, so your numbers will differ. <code>memcrumbs bench</code> measures
+        recall on your own questions; the setup guide shows how to write them.</p>
+    </section>
+
+    <section id="safe" aria-labelledby="safe-h">
+      <div class="sec-head"><h2 id="safe-h">Safe by default</h2></div>
+      <div class="split">
+        <ul class="checks">
+          <li><strong>Secrets stay out.</strong> Everything indexed, printed or written passes a redaction filter that fails
+            closed. Values you block are stored only as a hash.</li>
+          <li><strong>Credential files are never indexed.</strong> <code>.env</code> files, keys and credential files are
+            excluded by default.</li>
+          <li><strong>It writes only where it should.</strong> The project's wiki, its index folder and the files
+            <code>wire</code> names. Any other write is refused.</li>
+        </ul>
+        <ul class="checks">
+          <li><strong>Everything undoes.</strong> <code>wire --remove</code> and <code>suggest undo</code> restore files byte
+            for byte.</li>
+          <li><strong>Agents ask before risky commands.</strong> A gotcha like "never force-push" can become a permission
+            prompt, on your yes.</li>
+          <li><strong>Scan before you publish.</strong> <code>memcrumbs scan</code> checks a folder, an sdist or a wheel for
+            secret-like values.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section id="start" aria-labelledby="start-h">
+      <div class="sec-head"><h2 id="start-h">Quick start</h2></div>
+      <p class="intro">Four commands from install to a wired repository. The setup guide covers the rest, step by step.</p>
+      <figure class="term"><pre><span class="p">$</span> pip install git+https://github.com/mikedconcepcion/memcrumbs
+<span class="p">$</span> memcrumbs init myapp --repo /code/myapp --title "My App"
+<span class="p">$</span> memcrumbs -p myapp index
+<span class="p">$</span> memcrumbs -p myapp wire --repo /code/myapp --apply --allow
+<span class="d"># CLAUDE.md block, session header hook and skill; undo with wire --remove --apply</span></pre></figure>
+    </section>
+
+    <section id="faq" class="faq" aria-labelledby="faq-h">
+      <div class="sec-head"><h2 id="faq-h">Questions</h2></div>
+      <details open><summary>What is memcrumbs?</summary>
+        <p>memcrumbs is an open-source command-line tool that gives coding agents a project memory: a markdown wiki of rules,
+          gotchas, runbooks, decisions and incidents, plus a local SQLite full-text index of the wiki, your docs and your code
+          symbols. It is written in Python and uses only the standard library.</p></details>
+      <details><summary>Does it send my code or notes anywhere?</summary>
+        <p>No. memcrumbs makes no network calls and no model calls, and runs no background service. Your wiki is plain
+          markdown in a folder you choose, and the index is a local SQLite file.</p></details>
+      <details><summary>Which coding agents does it work with?</summary>
+        <p>Claude Code gets a <code>CLAUDE.md</code> block, a session-start hook and a skill from <code>memcrumbs wire</code>.
+          Other agents can read an <code>AGENTS.md</code> block (<code>wire --target agents</code>), and any agent that can run
+          shell commands can use the commands directly.</p></details>
+      <details><summary>How is it different from Claude Code's auto-memory?</summary>
+        <p>Auto-memory is notes an agent keeps for itself. memcrumbs keeps a curated wiki with age and status on every answer,
+          searched on demand instead of loaded in full. It can also offer to replace auto-memory notes the wiki already holds
+          with a pointer to the page.</p></details>
+      <details><summary>Does it use embeddings or a vector database?</summary>
+        <p>No. Search is SQLite FTS5 with BM25 ranking, a small thesaurus, your own synonyms and identifier splitting. On the
+          sample project's held-out questions, 95% of answers are in the top 3 hits.</p></details>
+      <details><summary>Is it free?</summary>
+        <p>Yes. memcrumbs is open source under the Apache-2.0 license.</p></details>
+    </section>
+  </main>
+
+  <footer>
+    <span>memcrumbs · Apache-2.0</span>
+    <nav aria-label="Project">
+      <a href="https://github.com/mikedconcepcion/memcrumbs">GitHub</a>
+      <a href="https://github.com/mikedconcepcion/memcrumbs/blob/main/docs/adopting.md">Setup guide</a>
+      <a href="https://github.com/mikedconcepcion/memcrumbs/blob/main/CHANGELOG.md">Changelog</a>
+      <a href="https://github.com/mikedconcepcion/memcrumbs/blob/main/SECURITY.md">Security</a>
+      <a href="https://github.com/mikedconcepcion/memcrumbs/issues/new/choose">Report a bug</a>
+    </nav>
+    <span class="right">Version 0.2.0 · alpha</span>
+  </footer>
+</div>
+
+<script>
+(function () {
+  var btn = document.getElementById("copy-btn"), cmd = document.getElementById("install-cmd");
+  btn.addEventListener("click", function () {
+    var text = cmd.textContent;
+    function done(msg) { btn.textContent = msg; setTimeout(function () { btn.textContent = "Copy"; }, 1600); }
+    function select() { var r = document.createRange(); r.selectNodeContents(cmd); var s = getSelection(); s.removeAllRanges(); s.addRange(r); done("Selected"); }
+    try {
+      navigator.clipboard.writeText(text).then(function () { done("Copied"); }, select);
+    } catch (e) { select(); }
+  });
+})();
+</script>
+
+</body>
+</html>

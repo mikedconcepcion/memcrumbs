@@ -1,0 +1,34 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "memcrumbs"
+version = "0.2.0"
+description = "Breadcrumbs of project memory for coding agents: a markdown wiki + token-efficient index (stdlib only)"
+readme = "README.md"
+requires-python = ">=3.11"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
+keywords = ["agents", "claude-code", "wiki", "memory", "search", "sqlite", "fts5"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Documentation",
+]
+
+[project.scripts]
+memcrumbs = "memcrumbs.cli:main"
+memcrumb = "memcrumbs.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["memcrumbs*"]
+
+[tool.setuptools.package-data]
+memcrumbs = ["templates/*"]

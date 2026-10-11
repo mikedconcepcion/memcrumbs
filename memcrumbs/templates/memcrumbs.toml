@@ -1,0 +1,31 @@
+# memcrumbs project config (schema v1, docs/config.md). Paths may be absolute; relative ones are relative to this folder.
+name = "{name}"
+title = "{title}"
+wiki = "wiki"
+repos = [{repos}]               # code roots: used for cwd -> project resolution and the code index
+plugins = []                     # e.g. ["plugins/myproject.py"]
+
+[code]                           # what `outline` / `sym` / code search cover (default: every language with an outliner)
+exclude = ["**/cache/**", "**/node_modules/**", "**/__pycache__/**"]
+
+# [[docs]]                       # extra markdown trees indexed as-is (READMEs, research write-ups, notes)
+# name = "repo-docs"
+# root = "/path/to/project"
+# include = ["**/*.md"]
+# kind = "doc"                   # doc | research | memory | legacy
+
+[security]
+never_index = []                 # added to the built-in list (.env*, *.pem, *.key, id_rsa*, credentials …)
+secret_keys = []                 # extra key names whose values are secrets, as globs: ["cfg*key"]
+
+[check]
+max_lines = 300                  # split pages longer than this
+stale_days = 45                  # flag pages whose `verified` date is older
+
+[status]                         # the session header: these sections, in this order, under one token cap
+sections = ["rules", "map", "gotchas", "plan", "journal", "plugins"]
+max_tokens = 1000                # hard ceiling 1500 (estimated as chars/4)
+rules = 8                        # bullets of rules.md "## Top"
+map_lines = 30                   # lines of index.md "## Map"
+gotchas = 12                     # bullets of gotchas.md "## Top"
+journal = 3                      # last journal lines

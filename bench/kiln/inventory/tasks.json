@@ -1,0 +1,206 @@
+{
+ "exported": "2026-10-09T23:00:00Z",
+ "source": "invented host scan (bench fixture)",
+ "tasks": [
+  {
+   "host": "studio-srv",
+   "name": "KilnScheduler",
+   "kind": "daemon",
+   "schedule": "startup",
+   "time_limit": "PT0S",
+   "state": "Running",
+   "last_result": 0,
+   "exported": "2026-10-09T23:00:00Z"
+  },
+  {
+   "host": "studio-srv",
+   "name": "SchedulerWatchdog",
+   "kind": "check",
+   "schedule": "every 5 min",
+   "time_limit": "PT1H",
+   "state": "Ready",
+   "last_result": 0,
+   "exported": "2026-10-09T23:00:00Z"
+  },
+  {
+   "host": "studio-srv",
+   "name": "KilnTelemetryPoll",
+   "kind": "poll",
+   "schedule": "every minute",
+   "time_limit": "PT1H",
+   "state": "Ready",
+   "last_result": 0,
+   "exported": "2026-10-09T23:00:00Z"
+  },
+  {
+   "host": "studio-srv",
+   "name": "DoorAlarmRelay",
+   "kind": "daemon",
+   "schedule": "startup",
+   "time_limit": "PT72H",
+   "state": "Running",
+   "last_result": 0,
+   "exported": "2026-10-09T23:00:00Z"
+  },
+  {
+   "host": "studio-srv",
+   "name": "FiringLogRotate",
+   "kind": "maintenance",
+   "schedule": "Sun 04:00",
+   "time_limit": "PT1H",
+   "state": "Ready",
+   "last_result": 0,
+   "exported": "2026-10-09T23:00:00Z"
+  },
+  {
+   "host": "studio-srv",
+   "name": "GlazeInventorySync",
+   "kind": "sync",
+   "schedule": "daily 01:10",
+   "time_limit": "PT1H",
+   "state": "Ready",
+   "last_result": 0,
+   "exported": "2026-10-09T23:00:00Z"
+  },
+  {
+   "host": "studio-srv",
+   "name": "NightlyBackup",
+   "kind": "backup",
+   "schedule": "daily 02:45",
+   "time_limit": "PT1H",
+   "state": "Ready",
+   "last_result": 0,
+   "exported": "2026-10-09T23:00:00Z"
+  },
+  {
+   "host": "web-srv",
+   "name": "BookingWeb",
+   "kind": "daemon",
+   "schedule": "startup",
+   "time_limit": "PT0S",
+   "state": "Running",
+   "last_result": 0,
+   "exported": "2026-10-09T23:00:00Z"
+  },
+  {
+   "host": "web-srv",
+   "name": "ChatBot",
+   "kind": "daemon",
+   "schedule": "startup",
+   "time_limit": "PT0S",
+   "state": "Running",
+   "last_result": 0,
+   "exported": "2026-10-09T23:00:00Z"
+  },
+  {
+   "host": "web-srv",
+   "name": "ChatKnowledgeRefresh",
+   "kind": "refresh",
+   "schedule": "daily 04:00",
+   "time_limit": "PT1H",
+   "state": "Ready",
+   "last_result": 0,
+   "exported": "2026-10-09T23:00:00Z"
+  },
+  {
+   "host": "web-srv",
+   "name": "NightlyBackup",
+   "kind": "backup",
+   "schedule": "daily 02:30",
+   "time_limit": "PT1H",
+   "state": "Ready",
+   "last_result": 0,
+   "exported": "2026-10-09T23:00:00Z"
+  },
+  {
+   "host": "web-srv",
+   "name": "BackupVerify",
+   "kind": "check",
+   "schedule": "daily 03:30",
+   "time_limit": "PT1H",
+   "state": "Ready",
+   "last_result": 1,
+   "exported": "2026-10-09T23:00:00Z"
+  },
+  {
+   "host": "web-srv",
+   "name": "InvoiceSync",
+   "kind": "sync",
+   "schedule": "daily 03:10",
+   "time_limit": "PT1H",
+   "state": "Ready",
+   "last_result": 0,
+   "exported": "2026-10-09T23:00:00Z"
+  },
+  {
+   "host": "web-srv",
+   "name": "ReminderMailer",
+   "kind": "mailer",
+   "schedule": "every 15 min",
+   "time_limit": "PT1H",
+   "state": "Ready",
+   "last_result": 0,
+   "exported": "2026-10-09T23:00:00Z"
+  },
+  {
+   "host": "web-srv",
+   "name": "StaleHoldSweeper",
+   "kind": "cleanup",
+   "schedule": "every 10 min",
+   "time_limit": "PT1H",
+   "state": "Ready",
+   "last_result": 0,
+   "exported": "2026-10-09T23:00:00Z"
+  },
+  {
+   "host": "web-srv",
+   "name": "PaymentReconcile",
+   "kind": "reconcile",
+   "schedule": "daily 06:00",
+   "time_limit": "PT1H",
+   "state": "Ready",
+   "last_result": 0,
+   "exported": "2026-10-09T23:00:00Z"
+  },
+  {
+   "host": "web-srv",
+   "name": "CertRenewCheck",
+   "kind": "check",
+   "schedule": "Mon 07:00",
+   "time_limit": "PT1H",
+   "state": "Ready",
+   "last_result": 0,
+   "exported": "2026-10-09T23:00:00Z"
+  },
+  {
+   "host": "web-srv",
+   "name": "DiskWatch",
+   "kind": "check",
+   "schedule": "hourly",
+   "time_limit": "PT1H",
+   "state": "Ready",
+   "last_result": 0,
+   "exported": "2026-10-09T23:00:00Z"
+  },
+  {
+   "host": "web-srv",
+   "name": "LogPrune",
+   "kind": "maintenance",
+   "schedule": "Sun 03:00",
+   "time_limit": "PT1H",
+   "state": "Ready",
+   "last_result": 0,
+   "exported": "2026-10-09T23:00:00Z"
+  },
+  {
+   "host": "web-srv",
+   "name": "WeeklyDigest",
+   "kind": "mailer",
+   "schedule": "Mon 08:00",
+   "time_limit": "PT1H",
+   "state": "Ready",
+   "last_result": 0,
+   "exported": "2026-10-09T23:00:00Z"
+  }
+ ]
+}

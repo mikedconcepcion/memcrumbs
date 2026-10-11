@@ -1,0 +1,13 @@
+// Fast test firing for wall tiles; also the template for new-kiln smoke tests (max 300 C).
+include "common.kiln";
+
+profile tile_fast (kiln: k3, cone: 06) {
+    segment dry {
+        ramp 200/h to 300;
+        hold 10m;
+    }
+    on fault {
+        alarm "door open";
+        abort;
+    }
+}

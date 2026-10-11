@@ -1,0 +1,1089 @@
+{
+ "_about": "Adversarial redaction corpus: each secret is stored as fragments of at most six characters that the test joins at runtime, so this file never holds a literal secret. Benign entries are known false-positive shapes that must pass through redaction unchanged.",
+ "secrets": [
+  {
+   "id": "env-db-password",
+   "fragments": [
+    "Qe7!vR",
+    "2mXw91"
+   ],
+   "contexts": [
+    "DB_PASSWORD={S}",
+    "export DB_PASSWORD={S}",
+    "password: \"{S}\""
+   ]
+  },
+  {
+   "id": "ini-passwd",
+   "fragments": [
+    "tB4#nK",
+    "8$zL"
+   ],
+   "contexts": [
+    "[mysql]\npasswd = {S}",
+    "passwd={S}"
+   ]
+  },
+  {
+   "id": "toml-pwd",
+   "fragments": [
+    "Hq9&wD",
+    "3^yF2"
+   ],
+   "contexts": [
+    "pwd = \"{S}\"",
+    "[auth]\npwd='{S}'"
+   ]
+  },
+  {
+   "id": "yaml-pass",
+   "fragments": [
+    "mZ5@cR",
+    "7!pa"
+   ],
+   "contexts": [
+    "pass: {S}",
+    "  pass: '{S}'"
+   ]
+  },
+  {
+   "id": "json-password",
+   "fragments": [
+    "Lg3%xV",
+    "6*uJ8d"
+   ],
+   "contexts": [
+    "{\"password\": \"{S}\"}",
+    "\"password\": \"{S}\","
+   ]
+  },
+  {
+   "id": "passphrase",
+   "fragments": [
+    "ocean-",
+    "Vk82-l",
+    "amp#Rt"
+   ],
+   "contexts": [
+    "passphrase: {S}",
+    "PASSPHRASE=\"{S}\""
+   ]
+  },
+  {
+   "id": "passcode",
+   "fragments": [
+    "74Hs!9",
+    "Dq"
+   ],
+   "contexts": [
+    "passcode = {S}",
+    "Passcode: {S}"
+   ]
+  },
+  {
+   "id": "secret-env",
+   "fragments": [
+    "woQZcU",
+    "1qvzuw",
+    "qO8l"
+   ],
+   "contexts": [
+    "export SECRET={S}",
+    "SECRET={S}"
+   ]
+  },
+  {
+   "id": "client-secret",
+   "fragments": [
+    "vY6aLP",
+    "4vySLM",
+    "nlhkIO",
+    "YLh6"
+   ],
+   "contexts": [
+    "client_secret: {S}",
+    "\"client_secret\": \"{S}\"",
+    "--client-secret {S}"
+   ]
+  },
+  {
+   "id": "token-python",
+   "fragments": [
+    "yi2VzJ",
+    "IcIAl0",
+    "MnYeZJ",
+    "vX4tML",
+    "38RM"
+   ],
+   "contexts": [
+    "token = \"{S}\"",
+    "self.token = '{S}'"
+   ]
+  },
+  {
+   "id": "access-token",
+   "fragments": [
+    "1AZ3mO",
+    "b..Jud",
+    "k0t2.I",
+    "Bx0MSF",
+    "jLIHgd"
+   ],
+   "contexts": [
+    "access_token={S}",
+    "\"access_token\": \"{S}\""
+   ]
+  },
+  {
+   "id": "refresh-token",
+   "fragments": [
+    "tCHfaB",
+    "soexCY",
+    "qsFdec",
+    "8Znbsr",
+    "Qau0e9",
+    "D6"
+   ],
+   "contexts": [
+    "refresh_token: {S}",
+    "REFRESH_TOKEN=\"{S}\""
+   ]
+  },
+  {
+   "id": "auth-token",
+   "fragments": [
+    "yCGwh9",
+    "VjHJmS",
+    "8TFPUU",
+    "53zVmT",
+    "7K"
+   ],
+   "contexts": [
+    "auth_token = {S}",
+    "AUTH_TOKEN={S}"
+   ]
+  },
+  {
+   "id": "api-key-snake",
+   "fragments": [
+    "dtwzDh",
+    "WoUPpA",
+    "QVWJZH",
+    "uAx5al"
+   ],
+   "contexts": [
+    "api_key = \"{S}\"",
+    "API_KEY={S}",
+    "api_key: {S}"
+   ]
+  },
+  {
+   "id": "apikey-flat",
+   "fragments": [
+    "DxbTpI",
+    "QCT3Wc",
+    "fpuIM0",
+    "nvq37E"
+   ],
+   "contexts": [
+    "apikey={S}",
+    "APIKEY: {S}"
+   ]
+  },
+  {
+   "id": "api-key-dash",
+   "fragments": [
+    "Jd_xpW",
+    "yNhAbG",
+    "rVjtKx",
+    "7DbamA"
+   ],
+   "contexts": [
+    "api-key: {S}",
+    "--api-key {S}"
+   ]
+  },
+  {
+   "id": "private-key-kv",
+   "fragments": [
+    "aGWll5",
+    "oflgb+",
+    "XSWpl4",
+    "kt4O8I",
+    "tCjaBS",
+    "nEhC"
+   ],
+   "contexts": [
+    "private_key = \"{S}\"",
+    "PRIVATE_KEY={S}"
+   ]
+  },
+  {
+   "id": "smtp-pass",
+   "fragments": [
+    "Wn6$jP",
+    "2!tYe"
+   ],
+   "contexts": [
+    "smtp_pass = {S}",
+    "SMTP_PASS=\"{S}\""
+   ]
+  },
+  {
+   "id": "db-pass",
+   "fragments": [
+    "Zx4^bM",
+    "9&kQ1"
+   ],
+   "contexts": [
+    "db_pass: {S}",
+    "DB_PASS={S}"
+   ]
+  },
+  {
+   "id": "signing-key",
+   "fragments": [
+    "965fc6",
+    "28a678",
+    "477b0e",
+    "0d68dd",
+    "065f7f",
+    "95e52c",
+    "eece"
+   ],
+   "contexts": [
+    "signing_key = \"{S}\"",
+    "SIGNING_KEY={S}"
+   ]
+  },
+  {
+   "id": "hmac-key",
+   "fragments": [
+    "HdZluu",
+    "Dp3FTO",
+    "ZjRwmF",
+    "BVsUVa",
+    "L93ioC",
+    "2Y"
+   ],
+   "contexts": [
+    "hmac_key: {S}",
+    "HMAC_KEY={S}"
+   ]
+  },
+  {
+   "id": "encryption-key",
+   "fragments": [
+    "7M5PEy",
+    "GbPW4e",
+    "WwhvH8",
+    "cUauOv",
+    "+g1850",
+    "wD"
+   ],
+   "contexts": [
+    "encryption_key = {S}",
+    "ENCRYPTION_KEY=\"{S}\""
+   ]
+  },
+  {
+   "id": "webhook-secret",
+   "fragments": [
+    "hlhruR",
+    "oAOaJs",
+    "5Zahzo",
+    "9ieGZx",
+    "Oxbi"
+   ],
+   "contexts": [
+    "webhook_secret: {S}",
+    "WEBHOOK_SECRET={S}"
+   ]
+  },
+  {
+   "id": "prefixed-stripe-like",
+   "fragments": [
+    "Mf3drL",
+    "KCDb4z",
+    "0PMbDe",
+    "CxAqT4",
+    "kiRhFv"
+   ],
+   "contexts": [
+    "STRIPE_LIKE_SECRET={S}",
+    "APP_API_KEY={S}",
+    "APP_TOKEN: {S}"
+   ]
+  },
+  {
+   "id": "mixed-case-kw",
+   "fragments": [
+    "5FnMXl",
+    "MWbioh",
+    "fGVw0K",
+    "gN"
+   ],
+   "contexts": [
+    "ApiKey = \"{S}\"",
+    "Client_Secret: {S}",
+    "AuthToken={S}",
+    "Password={S}"
+   ]
+  },
+  {
+   "id": "ps-env-apikey",
+   "fragments": [
+    "8X6X9n",
+    "HaH2ys",
+    "xKass9",
+    "7wmr5t",
+    "va"
+   ],
+   "contexts": [
+    "$env:API_KEY = \"{S}\"",
+    "$env:SERVICE_TOKEN='{S}'"
+   ]
+  },
+  {
+   "id": "ps-password-flag",
+   "fragments": [
+    "Rd8!sK",
+    "3#mV"
+   ],
+   "contexts": [
+    "Connect-Thing -User app -Password '{S}'",
+    "-Password \"{S}\" -Force"
+   ]
+  },
+  {
+   "id": "ps-securestring",
+   "fragments": [
+    "Yu5$hN",
+    "7!cA2"
+   ],
+   "contexts": [
+    "$p = ConvertTo-SecureString \"{S}\" -AsPlainText -Force",
+    "ConvertTo-SecureString '{S}' -AsPlainText"
+   ]
+  },
+  {
+   "id": "cli-password-flag",
+   "fragments": [
+    "pL3*gT",
+    "8&vW"
+   ],
+   "contexts": [
+    "tool login --user app --password {S}",
+    "tool --password={S} run"
+   ]
+  },
+  {
+   "id": "cli-token-flag",
+   "fragments": [
+    "qEoYnL",
+    "Y-TZ3v",
+    "44hCp4",
+    "oQzLdl",
+    "L2cd0S"
+   ],
+   "contexts": [
+    "tool --token={S}",
+    "tool --token {S} --verbose"
+   ]
+  },
+  {
+   "id": "xml-password",
+   "fragments": [
+    "Fb2@qJ",
+    "6#xH9"
+   ],
+   "contexts": [
+    "<password>{S}</password>",
+    "<add key=\"Password\" value=\"{S}\" />",
+    "<Connection password=\"{S}\" user=\"app\"/>"
+   ]
+  },
+  {
+   "id": "url-postgres",
+   "fragments": [
+    "Cd7n2K",
+    "p9xR4t"
+   ],
+   "contexts": [
+    "postgres://appuser:{S}@db.example:5432/app",
+    "DATABASE_URL=postgresql://svc:{S}@10.0.0.5/main"
+   ]
+  },
+  {
+   "id": "url-https-git",
+   "fragments": [
+    "Ms3w8L",
+    "q5Vz1b"
+   ],
+   "contexts": [
+    "https://deploy:{S}@git.example/team/repo.git",
+    "git clone https://bot:{S}@git.example/x.git"
+   ]
+  },
+  {
+   "id": "conn-string-mssql",
+   "fragments": [
+    "Gh6!kD",
+    "4$nPw"
+   ],
+   "contexts": [
+    "Server=sql.example,1433;Database=app;User Id=app;Password={S};",
+    "Data Source=sql.example;Uid=app;Pwd={S};Encrypt=true"
+   ]
+  },
+  {
+   "id": "query-token",
+   "fragments": [
+    "xefW2q",
+    "3ZvWeo",
+    "Cpkwl7",
+    "ONjztr"
+   ],
+   "contexts": [
+    "https://api.example/v1/items?token={S}&x=1",
+    "GET /download?file=a.zip&token={S}"
+   ]
+  },
+  {
+   "id": "query-api-key",
+   "fragments": [
+    "xfaB5F",
+    "sg5K7U",
+    "2WotRJ",
+    "yqWhxy"
+   ],
+   "contexts": [
+    "https://api.example/data?api_key={S}",
+    "https://api.example/data?q=1&apikey={S}&page=2"
+   ]
+  },
+  {
+   "id": "auth-bearer",
+   "fragments": [
+    "6MfRSy",
+    "eybbby",
+    "qw0VOH",
+    "DMwc_S",
+    "s-vwzR",
+    "k0J_Kr"
+   ],
+   "contexts": [
+    "Authorization: Bearer {S}",
+    "curl -H \"Authorization: Bearer {S}\" https://api.example/me"
+   ]
+  },
+  {
+   "id": "auth-basic",
+   "fragments": [
+    "c3ZjdX",
+    "NlcjpU",
+    "bjQkd1",
+    "E3IW1M",
+    "eDI="
+   ],
+   "contexts": [
+    "Authorization: Basic {S}",
+    "curl -H 'Authorization: Basic {S}' https://api.example/"
+   ]
+  },
+  {
+   "id": "x-api-key-header",
+   "fragments": [
+    "8iCHNn",
+    "LFrEry",
+    "R1MKyH",
+    "OMDLBr",
+    "SWi01J",
+    "hx"
+   ],
+   "contexts": [
+    "X-Api-Key: {S}",
+    "x-api-key: {S}"
+   ]
+  },
+  {
+   "id": "chatbot-token",
+   "fragments": [
+    "416438",
+    "9529:9",
+    "QRVg3Z",
+    "BHHwTd",
+    "LfAjX-",
+    "sSVCaJ",
+    "8DXLip",
+    "J8ZH"
+   ],
+   "contexts": [
+    "BOT_TOKEN={S}",
+    "https://chat.example/bot{S}/getMe",
+    "{S}"
+   ]
+  },
+  {
+   "id": "pem-block",
+   "fragments": [
+    "-----B",
+    "EGIN P",
+    "RIVATE",
+    " KEY--",
+    "---\nwr",
+    "rVcDj0",
+    "k60jEl",
+    "4VdCo0",
+    "/hR0A6",
+    "iRSw6Z",
+    "mCTxI5",
+    "lRcKul",
+    "ZjTOfS",
+    "UMX7sZ",
+    "1d5qlH",
+    "FR\nyT/",
+    "+Z/kd6",
+    "HhbAPq",
+    "xpB7LF",
+    "RaFcqP",
+    "K1tfGO",
+    "0Ir7mj",
+    "qk5VAu",
+    "1u7CJi",
+    "ShQOBj",
+    "OYbzQJ",
+    "g\nWZXd",
+    "K5MFPa",
+    "2khz2X",
+    "tL+psg",
+    "Ptt59s",
+    "ngsuKl",
+    "4JiPwK",
+    "BkWIuv",
+    "NEIbyR",
+    "RuAlxv",
+    "xaAVM/",
+    "\nIQvho",
+    "DPElXN",
+    "LjG1Uo",
+    "bhqKjM",
+    "L3oEig",
+    "f7Ndm1",
+    "psPEs4",
+    "ARwhei",
+    "xekEVu",
+    "fljdIF",
+    "L63fz\n",
+    "IF7TOu",
+    "Kt3xwf",
+    "3JQEgg",
+    "IIyA9R",
+    "b7rH9U",
+    "7n28Ik",
+    "O6cZ+D",
+    "aFzx0l",
+    "bKj/sM",
+    "krmOjX",
+    "I65U\nJ",
+    "aLI4XU",
+    "6mifWH",
+    "rOs3Rj",
+    "+YeY8X",
+    "QmdSY=",
+    "=\n----",
+    "-END P",
+    "RIVATE",
+    " KEY--",
+    "---"
+   ],
+   "contexts": [
+    "\"{S}\"",
+    "key_material: \"{S}\"",
+    "{S}"
+   ]
+  },
+  {
+   "id": "pem-rsa-block",
+   "fragments": [
+    "-----B",
+    "EGIN R",
+    "SA PRI",
+    "VATE K",
+    "EY----",
+    "-\nTBEE",
+    "IbD5L2",
+    "N1HLpE",
+    "S55tS9",
+    "UtfcNA",
+    "TonBTl",
+    "WQGHGr",
+    "d/95L4",
+    "O0LF4G",
+    "wYXftr",
+    "liczU2",
+    "\n31qWz",
+    "/KR0xQ",
+    "PzcJeE",
+    "uCBfPG",
+    "pQPQMO",
+    "tYu0IZ",
+    "V5Jurg",
+    "CfUtsK",
+    "05HEFh",
+    "DBz3Bp",
+    "Ztyuw\n",
+    "Tzh3XS",
+    "0zXoUw",
+    "k0TnHC",
+    "3Z7bpc",
+    "UcFd6N",
+    "0emr5Z",
+    "jiTUn9",
+    "uNfZ9x",
+    "fFopXx",
+    "Z4Ttl/",
+    "NHvx\n-",
+    "----EN",
+    "D RSA ",
+    "PRIVAT",
+    "E KEY-",
+    "----"
+   ],
+   "contexts": [
+    "ssh_key = \"{S}\"",
+    "here:\n{S}\nafter"
+   ]
+  },
+  {
+   "id": "long-alnum-bare",
+   "fragments": [
+    "kQTaHg",
+    "ZipGR3",
+    "nOYYeL",
+    "8hZMl4",
+    "CkjRe8",
+    "cPwlPm",
+    "WLxg0F",
+    "yz"
+   ],
+   "contexts": [
+    "{S}",
+    "id was {S} in the log",
+    "ref={S}"
+   ]
+  },
+  {
+   "id": "long-alnum-bare-2",
+   "fragments": [
+    "sCC7Gl",
+    "8RVpNa",
+    "TBUg91",
+    "DCmiiQ",
+    "TaZfDQ",
+    "iBjFuy",
+    "lwBzcz",
+    "s2xADn",
+    "dbTc"
+   ],
+   "contexts": [
+    "note to self: {S}",
+    "\"{S}\""
+   ]
+  },
+  {
+   "id": "long-hex-bare",
+   "fragments": [
+    "ebf1ea",
+    "572de2",
+    "e9d32e",
+    "c5b42d",
+    "c40add",
+    "30258a",
+    "19af89",
+    "316b32",
+    "df8308",
+    "30cce5",
+    "0446"
+   ],
+   "contexts": [
+    "key bytes {S} end",
+    "{S}"
+   ]
+  },
+  {
+   "id": "long-hex-48",
+   "fragments": [
+    "7c941e",
+    "fdf4d1",
+    "1736f5",
+    "8dd0b6",
+    "d86b79",
+    "0a2c2d",
+    "5bb6f0",
+    "72bf90"
+   ],
+   "contexts": [
+    "blob: {S}",
+    "{S}"
+   ]
+  },
+  {
+   "id": "short-symbol-pw",
+   "fragments": [
+    "x9$Kq!",
+    "2m"
+   ],
+   "contexts": [
+    "password: {S}",
+    "pass={S}",
+    "pwd = \"{S}\""
+   ]
+  },
+  {
+   "id": "short-symbol-pw-2",
+   "fragments": [
+    "Aq#7zL",
+    "p@4W"
+   ],
+   "contexts": [
+    "password={S}",
+    "Password: {S}"
+   ]
+  },
+  {
+   "id": "pw-semicolon",
+   "fragments": [
+    "ab;Cd7",
+    ",ef)Gh"
+   ],
+   "contexts": [
+    "password = \"{S}\"",
+    "password: '{S}'"
+   ]
+  },
+  {
+   "id": "pw-braces-equals",
+   "fragments": [
+    "Kj}9]x",
+    "Q=2{vB"
+   ],
+   "contexts": [
+    "secret = \"{S}\"",
+    "\"secret\": \"{S}\""
+   ]
+  },
+  {
+   "id": "pw-embedded-quote",
+   "fragments": [
+    "Tz4\"Lm",
+    "'8Rq#p"
+   ],
+   "contexts": [
+    "password = '{S}'",
+    "token: \"{S}\""
+   ]
+  },
+  {
+   "id": "pw-equals-trailing",
+   "fragments": [
+    "Vb3n7X",
+    "k2Qa=="
+   ],
+   "contexts": [
+    "api_key: \"{S}\"",
+    "ENCRYPTION_KEY={S}"
+   ]
+  }
+ ],
+ "benign": [
+  {
+   "id": "uuid-v4",
+   "text": "request 3f2b6c1e-9a4d-4e57-8c2a-1b7f0d9e6a35 finished"
+  },
+  {
+   "id": "uuid-upper",
+   "text": "TraceId: 3F2B6C1E-9A4D-4E57-8C2A-1B7F0D9E6A35"
+  },
+  {
+   "id": "uuid-braces",
+   "text": "{b7e1a9c4-5d02-4c8e-9f13-6a0d2e7b4c58}"
+  },
+  {
+   "id": "uuid-nodash",
+   "text": "session_id=b7e1a9c45d024c8e9f136a0d2e7b4c58"
+  },
+  {
+   "id": "uuid-urn",
+   "text": "urn:uuid:0c9d8e7f-1a2b-4c3d-8e4f-5a6b7c8d9e0f"
+  },
+  {
+   "id": "git-sha-full",
+   "text": "commit 9fceb02d0ae598e95dc970b74767f19372d61af8"
+  },
+  {
+   "id": "git-log-oneline",
+   "text": "a1b2c3d Fix parser edge case\n4e5f6a7 Add retry to uploader"
+  },
+  {
+   "id": "git-log-decorated",
+   "text": "* 9fceb02 (HEAD -> main, origin/main) Tidy docs"
+  },
+  {
+   "id": "git-sha-12",
+   "text": "merged at 9fceb02d0ae5 into main"
+  },
+  {
+   "id": "git-sha-url",
+   "text": "https://git.example/team/repo/commit/9fceb02d0ae598e95dc970b74767f19372d61af8"
+  },
+  {
+   "id": "git-sha-blob-url",
+   "text": "https://git.example/team/repo/blob/9fceb02d0ae598e95dc970b74767f19372d61af8/src/main.py#L10-L20"
+  },
+  {
+   "id": "git-rev-parse",
+   "text": "$ git rev-parse HEAD\n9fceb02d0ae598e95dc970b74767f19372d61af8"
+  },
+  {
+   "id": "sha256sum-out",
+   "text": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  empty.txt"
+  },
+  {
+   "id": "sha1sum-out",
+   "text": "da39a3ee5e6b4b0d3255bfef95601890afd80709  empty.txt"
+  },
+  {
+   "id": "md5sum-out",
+   "text": "d41d8cd98f00b204e9800998ecf8427e  empty.txt"
+  },
+  {
+   "id": "certutil-hash",
+   "text": "SHA256 hash of file.bin:\n9f86d081 884c7d65 9a2feaa0 c55ad015 a3bf4f1b 2b0b822c d15d6c15 b0f00a08"
+  },
+  {
+   "id": "image-digest",
+   "text": "image: registry.example/app:1.4.2 sha256:2c26b46b68ffc68ff99b453c1d30413413422d706483bfa0f98a5e886266e7ae"
+  },
+  {
+   "id": "docker-ref",
+   "text": "FROM registry.example/base@sha256:5891b5b522d5df086d0ff0b110fbd9d21bb4fc7163af34d08286a2e846f6be03"
+  },
+  {
+   "id": "docker-pull",
+   "text": "docker pull registry.example/team/app@sha256:fcde2b2edba56bf408601fb721fe9b5c338d10ee429ea04fae5511b68fbf8fb9"
+  },
+  {
+   "id": "npm-integrity-line",
+   "text": "    integrity sha512-BdXyVjOCTwNl7JwqEvCNdIux8BtYiJeuywuyqkuggPzxQlWp47ALfe3dCFL2OCfOc6Qi7ggAMKfjlaTNJkd38t=="
+  },
+  {
+   "id": "npm-integrity-json",
+   "text": "\"integrity\": \"sha384-/YBOLQIbdHB95+4xEEhvB0s0AsyWYvw/9VQBTMcpYZGWBKVwggJ15p95NPz8hgZr\","
+  },
+  {
+   "id": "cargo-checksum",
+   "text": "checksum = \"6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b\""
+  },
+  {
+   "id": "poetry-hash",
+   "text": "hash = \"sha256:d4735e3a265e16eee03f59718b9b5d03019c07d8b6c51f90da3a666eec13ab35\""
+  },
+  {
+   "id": "pip-hash",
+   "text": "    --hash=sha256:4e07408562bedb8b60ce05c1decfe3ad16b72230967de01f640b7e4729b49fce \\"
+  },
+  {
+   "id": "sri-attr",
+   "text": "<script src=\"/a.js\" integrity=\"sha384-ALxFHbRN2rNAM8SRq9F1kwc455xmQ9NyGG/259HOIZ7pCzIzEp7RhOTe28loUR4T\" crossorigin=\"anonymous\"></script>"
+  },
+  {
+   "id": "data-uri-png",
+   "text": "<img src=\"data:image/png;base64,jU1BxygL6OCGF830nEMZCsejAqHxPKUfy/QBmQpqFR+O8nZQgmOfo6bxJbBXL7Gz3m2v4qJ8nszcHPSUZU4Gb0zMZXuO4jCNDD9z4ynvZPn6VZZaAmDK3ebT+s9LJCQcWr+Kqfz6W1X3==\">"
+  },
+  {
+   "id": "data-uri-css",
+   "text": "url(data:font/woff2;base64,2NF3Rp3d94ECAtYQFrSOP6BGLG4iGodTwYdI+FJm1YviC8hvJDZ54TpawDX0z2FnD/7S8ZNeoa9Y/gP2t0hadm1UpeAk6s97wdBgcUbkedDWglX5zREePT7c)"
+  },
+  {
+   "id": "path-windows-guid",
+   "text": "C:\\Users\\dev\\AppData\\Local\\Temp\\{3f2b6c1e-9a4d-4e57-8c2a-1b7f0d9e6a35}\\build\\obj\\Release\\net8.0\\App.dll"
+  },
+  {
+   "id": "path-windows-long",
+   "text": "E:\\Projects\\Example\\src\\Components\\Authentication\\TokenRefreshHandlerTests\\Fixtures\\sample.json"
+  },
+  {
+   "id": "path-posix-long",
+   "text": "/var/lib/app/cache/3f2b6c1e-9a4d-4e57-8c2a-1b7f0d9e6a35/objects/ab/cdef0123456789abcdef0123456789abcdef01"
+  },
+  {
+   "id": "path-home",
+   "text": "/home/dev/.config/example/credentials-template.yaml"
+  },
+  {
+   "id": "url-plain",
+   "text": "https://docs.example/guide/getting-started?lang=en&page=2#install"
+  },
+  {
+   "id": "url-with-port",
+   "text": "http://localhost:8080/api/v2/items/42"
+  },
+  {
+   "id": "version-semver",
+   "text": "upgraded from 1.2.3-rc.1+build.456 to 2.0.0"
+  },
+  {
+   "id": "version-pins",
+   "text": "requests==2.31.0\nnumpy>=1.26,<2.0"
+  },
+  {
+   "id": "icon-b64-short",
+   "text": "\"icon\": \"iVBORw0KGgoAAAANSUhEUgAAAAEAAAAB\""
+  },
+  {
+   "id": "css-color-fn",
+   "text": "color: rgb(34, 139, 230); background: hsl(210 40% 96%);"
+  },
+  {
+   "id": "hex-colors",
+   "text": "--bg: #1e293b; --fg: #f8fafc; border: 1px solid #cbd5e1;"
+  },
+  {
+   "id": "ipv6",
+   "text": "listening on [2001:db8:85a3::8a2e:370:7334]:443 and fe80::1ff:fe23:4567:890a"
+  },
+  {
+   "id": "mac-addr",
+   "text": "eth0 link/ether 00:1a:2b:3c:4d:5e brd ff:ff:ff:ff:ff:ff"
+  },
+  {
+   "id": "iso-timestamp",
+   "text": "2026-10-10T14:22:31.482913+00:00 INFO started"
+  },
+  {
+   "id": "phone",
+   "text": "call +1 (555) 010-2345 or 555-010-9876 ext 12"
+  },
+  {
+   "id": "camelcase-long",
+   "text": "class AbstractSingletonProxyFactoryBeanConfigurator2 extends Base {}"
+  },
+  {
+   "id": "snake-long",
+   "text": "def compute_rolling_window_exponential_weighted_moving_average_with_bias_correction(x): pass"
+  },
+  {
+   "id": "const-long",
+   "text": "MAXIMUM_NUMBER_OF_CONCURRENT_BACKGROUND_WORKER_PROCESSES_ALLOWED = 8"
+  },
+  {
+   "id": "hashed-js",
+   "text": "<script src=\"/static/app.3f9a1c2b7e.js\"></script>"
+  },
+  {
+   "id": "hashed-css",
+   "text": "chunk-5d8e9f01a2b3c4d5.css and vendor.9c1e4a7b2d6f8031.js"
+  },
+  {
+   "id": "py-getpass",
+   "text": "password = getpass()"
+  },
+  {
+   "id": "py-environ",
+   "text": "password = os.environ[\"DB_PASSWORD\"]"
+  },
+  {
+   "id": "py-token-none",
+   "text": "token = None"
+  },
+  {
+   "id": "py-config-get",
+   "text": "api_key = config.get(\"api_key\")"
+  },
+  {
+   "id": "py-settings",
+   "text": "self.secret = settings.SECRET_KEY"
+  },
+  {
+   "id": "ps-read-host",
+   "text": "$Password = Read-Host -AsSecureString"
+  },
+  {
+   "id": "ps-env-ref",
+   "text": "$token = $env:API_TOKEN"
+  },
+  {
+   "id": "gha-secrets",
+   "text": "password: ${{ secrets.DB_PASSWORD }}"
+  },
+  {
+   "id": "tmpl-braces",
+   "text": "password: {{ .Values.db.password }}"
+  },
+  {
+   "id": "shell-var-ref",
+   "text": "curl -H \"Authorization: Bearer $TOKEN\" https://api.example/me"
+  },
+  {
+   "id": "shell-env-ref",
+   "text": "export API_KEY=\"${API_KEY}\""
+  },
+  {
+   "id": "redacted-angle",
+   "text": "password=<redacted>"
+  },
+  {
+   "id": "redacted-stars",
+   "text": "password: ********"
+  },
+  {
+   "id": "placeholder-token",
+   "text": "token: \"<your token here>\""
+  },
+  {
+   "id": "placeholder-changeme",
+   "text": "secret: changeme"
+  },
+  {
+   "id": "placeholder-example",
+   "text": "api_key: example"
+  },
+  {
+   "id": "placeholder-xxxx",
+   "text": "password=xxxxxxxx"
+  },
+  {
+   "id": "placeholder-your-key",
+   "text": "API_KEY=your-api-key-here"
+  },
+  {
+   "id": "prose-rotate",
+   "text": "password: rotate monthly"
+  },
+  {
+   "id": "prose-policy",
+   "text": "Passwords must be at least 12 characters"
+  },
+  {
+   "id": "prose-expiry",
+   "text": "the token expires after 30 days"
+  },
+  {
+   "id": "prose-vault",
+   "text": "api key: see the vault entry 'payments'"
+  },
+  {
+   "id": "prose-none",
+   "text": "Secret: none required"
+  },
+  {
+   "id": "prose-passcode",
+   "text": "passcode: ask the owner"
+  },
+  {
+   "id": "prose-secret-sauce",
+   "text": "The secret to a fast build is caching the dependency layer."
+  }
+ ]
+}

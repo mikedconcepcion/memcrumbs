@@ -1,0 +1,95 @@
+name: ci
+
+on:
+  push:                     # every branch: CI must run before the public flip (gate D1)
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: test (${{ matrix.os }}, py${{ matrix.python }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python: ["3.11", "3.12", "3.13"]
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0          # the v0.1-upgrade test needs the history
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ matrix.python }}
+      - run: python -c "import sqlite3; print('sqlite', sqlite3.sqlite_version)"
+      - run: python -m pip install -e .
+      - name: unit, property, corpus, concurrency and bench tests
+        run: python -m unittest discover -s tests -v
+      - name: secret scan of the repo (no project needed)
+        run: memcrumbs scan .
+      - name: recall gate on the public bench
+        run: |
+          export MEMCRUMBS_PROJECTS=bench
+          memcrumbs -p kiln index --full
+          memcrumbs -p kiln bench bench/questions.toml --min-recall3 0.90
+          memcrumbs -p kiln bench bench/holdout.toml
+          memcrumbs -p kiln bench bench/holdout2.toml --min-recall3 0.90   # fresh holdout, written blind
+
+  quickstart:
+    name: fresh clone to first answer (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - run: python scripts/quickstart.py --venv
+
+  perf:
+    name: speed targets, 10k files (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      # the speed gate is enforced on Linux; GitHub's shared Windows runner varies 21-40 s for the same code,
+      # so there the numbers are recorded (artifact) without failing the run
+      - run: python scripts/perf.py --files 10000 ${{ matrix.os == 'ubuntu-latest' && '--check' || '' }} --json perf-${{ matrix.os }}.json
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: perf-${{ matrix.os }}
+          path: perf-${{ matrix.os }}.json
+
+  package:
+    name: build and scan sdist + wheel
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - run: python -m pip install build && python -m build
+      - run: python -m pip install dist/*.whl
+      - name: scan the built artifacts
+        run: |
+          for f in dist/*; do memcrumbs scan "$f"; done
+      - uses: actions/upload-artifact@v7
+        with:
+          name: dist
+          path: dist/

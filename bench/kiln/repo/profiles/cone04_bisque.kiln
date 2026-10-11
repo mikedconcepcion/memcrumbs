@@ -1,0 +1,22 @@
+// Cone 04 bisque firing for the small kiln k1.
+include "common.kiln";
+
+profile cone04_bisque (kiln: k1, cone: 04) {
+    segment water_smoke {
+        ramp 60/h to 120;
+        hold 60m;
+    }
+    segment quartz_inversion {
+        ramp 100/h to 573;
+        hold 15m;
+    }
+    use candle(900, 20m);
+    segment bisque_top {
+        ramp 108/h to 1060;
+        hold 15m;
+    }
+    on fault {
+        alarm "thermocouple break";
+        abort;
+    }
+}

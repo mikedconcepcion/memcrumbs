@@ -1,0 +1,130 @@
+"""wire / wire --remove: every file comes back byte for byte, and nothing outside the declared files is touched
+(write set enforced, `wire --remove` restores files byte for byte)."""
+import contextlib
+import io
+import itertools
+import json
+import os
+import tempfile
+import unittest
+from pathlib import Path
+from unittest import mock
+
+from memcrumbs import project as proj, wire
+from memcrumbs.output import Out
+
+CLAUDE = {"absent": None, "empty": b"", "plain": b"# Repo\nhand notes\n", "no-newline": b"# Repo\nhand notes",
+          "crlf-bom": b"\xef\xbb\xbf# Repo\r\nnotes  \r\n\r\n", "has-other-block":
+          b"a\n<!-- memcrumbs:gen other -->\nx\n<!-- memcrumbs:end -->\nb\n"}
+SETTINGS = {"absent": None, "empty-object": b"{}\n", "compact": b'{"model":"x"}',
+            "pretty": b'{\n  "permissions": {\n    "allow": ["Bash(ls)"]\n  },\n  "env": {"A": "\\u00e9"}\n}\n',
+            "hooks-no-sessionstart": b'{\r\n  "hooks": {\r\n    "Stop": []\r\n  }\r\n}\r\n',
+            "sessionstart-list": b'{"hooks": {"SessionStart": [{"matcher": "startup", "hooks": []}]}}\n',
+            "empty-sessionstart": b'{"hooks": {"SessionStart": []}}\n'}
+
+
+def snapshot(root):
+    return {p.relative_to(root).as_posix(): p.read_bytes() for p in sorted(root.rglob("*")) if p.is_file()}
+
+
+class WireRoundTrip(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
+        root = Path(self.tmp.name)
+        projects = root / "projects"
+        (projects / "t" / "wiki").mkdir(parents=True)
+        (projects / "t" / "memcrumbs.toml").write_text('name = "t"\n', encoding="utf-8")
+        self.root = root
+        self.env = mock.patch.dict(os.environ, {"MEMCRUMBS_PROJECTS": str(projects)})
+        self.env.start()
+        self.project = proj.resolve("t")
+
+    def tearDown(self):
+        self.env.stop()
+        self.tmp.cleanup()
+
+    def run_wire(self, repo, **kw):
+        with contextlib.redirect_stdout(io.StringIO()):
+            out = Out("wire", self.project)
+            wire.wire(out, self.project, repo, apply=True, **kw)
+            out.close()
+
+    def test_round_trip_is_byte_exact(self):
+        for (cname, cbytes), (sname, sbytes), targets, allow in itertools.product(
+                CLAUDE.items(), SETTINGS.items(), (("claude",), ("claude", "agents")), (False, True)):
+            with self.subTest(claude=cname, settings=sname, targets=targets, allow=allow):
+                repo = self.root / ("repo-%s-%s-%d-%d" % (cname, sname, len(targets), allow))
+                repo.mkdir()
+                (repo / "src.py").write_bytes(b"x = 1\n")
+                if cbytes is not None:
+                    (repo / "CLAUDE.md").write_bytes(cbytes)
+                if sbytes is not None:
+                    (repo / ".claude").mkdir()
+                    (repo / ".claude" / "settings.json").write_bytes(sbytes)
+                before = snapshot(repo)
+                self.run_wire(repo, targets=targets, allow=allow)
+                wired = snapshot(repo)
+                settings = json.loads(wired[".claude/settings.json"])
+                hooks = settings["hooks"]["SessionStart"]
+                self.assertEqual(sum(h["command"].startswith("memcrumbs ") for e in hooks for h in e["hooks"]), 1)
+                rules = (settings.get("permissions") or {}).get("allow") or []
+                self.assertEqual("PowerShell(memcrumbs -p t find:*)" in rules, allow)
+                self.assertFalse(any(" log" in r or " verify" in r or " wire" in r for r in rules))
+                self.assertIn(b"memcrumbs:gen claude", wired["CLAUDE.md"])
+                self.assertEqual(set(wired) - set(before) - {"CLAUDE.md", "AGENTS.md", ".claude/settings.json",
+                                                             ".claude/skills/memcrumbs/SKILL.md"}, set())
+                self.run_wire(repo, targets=targets, allow=allow)             # idempotent
+                self.assertEqual(snapshot(repo), wired)
+                self.run_wire(repo, targets=targets, remove=True)
+                self.assertEqual(snapshot(repo), before)
+                self.assertEqual(sorted(p.name for p in repo.iterdir()), sorted(
+                    {"src.py"} | ({"CLAUDE.md"} if cbytes is not None else set()) | ({".claude"} if sbytes is not None else set())))
+
+    def test_allow_added_later_and_partial_rules(self):
+        repo = self.root / "later"
+        (repo / ".claude").mkdir(parents=True)
+        original = b'{\n  "permissions": {\n    "allow": [\n      "Bash(memcrumbs find:*)",\n      "Bash(ls:*)"\n    ]\n  }\n}\n'
+        (repo / ".claude" / "settings.json").write_bytes(original)
+        self.run_wire(repo)                                            # hook first, no rules
+        self.run_wire(repo, allow=True)                                # rules in a later run; one already there
+        rules = json.loads((repo / ".claude" / "settings.json").read_text(encoding="utf-8"))["permissions"]["allow"]
+        self.assertEqual(rules.count("Bash(memcrumbs find:*)"), 1)
+        self.assertIn("Bash(ls:*)", rules)
+        self.run_wire(repo, remove=True)
+        self.assertEqual((repo / ".claude" / "settings.json").read_bytes(), original)
+
+    def test_refuses_what_it_cannot_reverse(self):
+        repo = self.root / "jsonc"
+        (repo / ".claude").mkdir(parents=True)
+        bad = b'{\n  // a comment\n  "model": "x"\n}\n'
+        (repo / ".claude" / "settings.json").write_bytes(bad)
+        with self.assertRaises(SystemExit):
+            self.run_wire(repo)
+        self.assertEqual((repo / ".claude" / "settings.json").read_bytes(), bad)
+        self.assertFalse((repo / "CLAUDE.md").exists())                 # nothing half-applied
+
+    def test_hand_edited_hook_is_not_guessed_away(self):
+        repo = self.root / "edited"
+        repo.mkdir()
+        self.run_wire(repo)
+        sp = repo / ".claude" / "settings.json"
+        sp.write_text(json.dumps(json.loads(sp.read_text(encoding="utf-8")), indent=4), encoding="utf-8")  # reformatted
+        with self.assertRaises(SystemExit):
+            self.run_wire(repo, remove=True)
+
+    def test_user_skill_kept_unless_asked(self):
+        repo = self.root / "userskill"
+        repo.mkdir()
+        home = self.root / "home"
+        with mock.patch.object(Path, "home", return_value=home):
+            self.run_wire(repo, user_skill=True)
+            skill = home / ".claude" / "skills" / "memcrumbs" / "SKILL.md"
+            self.assertTrue(skill.exists())
+            self.run_wire(repo, remove=True)
+            self.assertTrue(skill.exists())
+            self.run_wire(repo, remove=True, user_skill=True)
+            self.assertFalse(skill.exists())
+
+
+if __name__ == "__main__":
+    unittest.main()

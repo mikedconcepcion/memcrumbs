@@ -1,0 +1,20 @@
+# derived / local-only
+**/.memcrumbs/
+**/secrets.deny
+site/
+__pycache__/
+*.egg-info/
+build/
+
+# private project data never belongs in the package repo (see README: projects_dir)
+projects/
+
+# local research output (not part of the package)
+research_notes/
+reports/
+
+# built packages
+dist/
+
+# review state written when the sample project is used in place
+bench/kiln/wiki/.review.json

@@ -1,0 +1,19 @@
+# Current-value questions: answered by the facts registry (wiki/facts.md), one `fact` row each.
+# Written after the registry, so they test the feature, not blind recall: report them apart from dev and holdout.
+[[q]]
+id = "fv-01"
+category = "fact"
+q = "what version of the booking app is live right now?"
+expect = ["wiki/facts.md"]
+
+[[q]]
+id = "fv-02"
+category = "fact"
+q = "which port does the booking app listen on?"
+expect = ["wiki/facts.md"]
+
+[[q]]
+id = "fv-03"
+category = "fact"
+q = "chat bot port"
+expect = ["wiki/facts.md"]

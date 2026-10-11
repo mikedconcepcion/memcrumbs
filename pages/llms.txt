@@ -1,0 +1,38 @@
+# memcrumbs
+> An open-source CLI that gives coding agents like Claude Code a project memory: a markdown wiki and a local index that answers in a few hundred tokens.
+
+## About
+memcrumbs is an open-source command-line tool, written in Python with only the standard library. It keeps a project's
+working knowledge (standing rules, gotchas, runbooks, decisions, incidents and a dated journal) in short markdown pages,
+and indexes those pages, your docs and your code symbols in a local SQLite FTS5 index. A coding agent reads a header of
+rules once per session, then looks things up with `memcrumbs find` instead of reading whole files. It makes no network
+calls and no model calls, and runs no background service. License: Apache-2.0.
+
+## What it does
+- Session header: standing rules, project map, top gotchas and recent journal lines, capped at 1,000 tokens by default.
+- `find`: ranked hits with path:line, age (`v12d`) and status (`STALE`, `SRC-CHANGED 3d`, `SUPERSEDED`, `REJECTED`).
+- `page`, `outline`, `sym --body`: one section of a page, or one function by its line range.
+- `about <file>`: the decisions, incidents and gotchas that cite a file.
+- `fact <key>`: one current value per fact, optionally read from the source file.
+- `decision`, `incident`, `log`, `rule`: structured records.
+- `suggest`: offers (merges, missing pages, permission prompts for gotchas, skills), applied only on the user's yes,
+  each undoable byte for byte.
+- `check` and `scan`: wiki lint, and a secret scan of a folder, sdist or wheel.
+- `wire`: connects a repository to Claude Code (CLAUDE.md block, session-start hook, skill) or to agents that read
+  AGENTS.md.
+
+## Measured (repository benchmarks)
+- Recall@3 0.95 on 40 held-out questions written blind, on the invented sample project.
+- About 450 tokens per lookup answer (mean over 100 sample questions, estimated as characters / 4).
+- 10,000-file repository: full index 5-10 s, `find` 25-100 ms.
+- CI: Linux, macOS and Windows with Python 3.11, 3.12 and 3.13.
+
+## Install
+pip install git+https://github.com/mikedconcepcion/memcrumbs
+
+## Links
+- Website: https://mikedconcepcion.github.io/memcrumbs/
+- Repository: https://github.com/mikedconcepcion/memcrumbs
+- Setup guide: https://github.com/mikedconcepcion/memcrumbs/blob/main/docs/adopting.md
+- Changelog: https://github.com/mikedconcepcion/memcrumbs/blob/main/CHANGELOG.md
+- Security policy: https://github.com/mikedconcepcion/memcrumbs/blob/main/SECURITY.md

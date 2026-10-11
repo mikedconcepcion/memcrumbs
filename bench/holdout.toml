@@ -1,0 +1,281 @@
+# Holdout question set for kiln corpus (independent of questions.toml)
+
+[[q]]
+id = "ho-01"
+q = "how do I undo a bad release of the booking site?"
+expect = ["wiki/runbooks/rollback-booking.md"]
+category = "runbook"
+paraphrase = true
+
+[[q]]
+id = "ho-02"
+q = "steps to give a customer their money back"
+expect = ["wiki/runbooks/issue-refund.md"]
+category = "runbook"
+paraphrase = true
+
+[[q]]
+id = "ho-03"
+q = "the studio machine died completely, how do I set it up again from nothing?"
+expect = ["wiki/runbooks/rebuild-studio-srv.md"]
+category = "runbook"
+paraphrase = true
+
+[[q]]
+id = "ho-04"
+q = "can I bounce the scheduler daemon while a firing is in progress?"
+expect = ["wiki/runbooks/restart-scheduler-mid-firing.md"]
+category = "runbook"
+paraphrase = false
+
+[[q]]
+id = "ho-05"
+q = "our booking database got corrupted, how do I bring back yesterday's copy?"
+expect = ["wiki/runbooks/restore-db-from-backup.md"]
+category = "runbook"
+paraphrase = true
+
+[[q]]
+id = "ho-06"
+q = "how to swap the card processor secret for a fresh one"
+expect = ["wiki/runbooks/rotate-payment-key.md"]
+category = "runbook"
+paraphrase = true
+
+[[q]]
+id = "ho-07"
+q = "we bought a third furnace, what do I have to configure so the software knows about it?"
+expect = ["wiki/runbooks/add-new-kiln.md"]
+category = "runbook"
+paraphrase = true
+
+[[q]]
+id = "ho-08"
+q = "why did our long-running background jobs keep dying every three days without any error?"
+expect = ["wiki/gotchas.md", "wiki/incidents/2026-03-14-72h-task-limit-kills-scheduler.md"]
+category = "gotcha"
+paraphrase = true
+
+[[q]]
+id = "ho-09"
+q = "gotcha: invisible character at start of a script makes task exit with no log"
+expect = ["wiki/gotchas.md", "wiki/incidents/2026-07-29-bom-breaks-scheduled-task.md"]
+category = "gotcha"
+paraphrase = false
+
+[[q]]
+id = "ho-10"
+q = "is it safe to just copy a sqlite file for a backup while the site is running?"
+expect = ["wiki/gotchas.md", "wiki/incidents/2026-07-11-bookings-db-locked-by-backup.md"]
+category = "gotcha"
+paraphrase = true
+
+[[q]]
+id = "ho-11"
+q = "assistant tells students an old cost for a class after we change fees, why?"
+expect = ["wiki/gotchas.md", "wiki/incidents/2026-09-02-chatbot-stale-prices.md"]
+category = "gotcha"
+paraphrase = true
+
+[[q]]
+id = "ho-12"
+q = "what happened when eleven people got billed two times?"
+expect = ["wiki/incidents/2026-04-02-double-charge-on-retry.md"]
+category = "incident"
+paraphrase = true
+
+[[q]]
+id = "ho-13"
+q = "which firing ruined a whole load because of a wrong number in a profile?"
+expect = ["wiki/incidents/2026-05-19-kiln-overfire-profile-typo.md"]
+category = "incident"
+paraphrase = true
+
+[[q]]
+id = "ho-14"
+q = "incident where class reminder emails arrived two hours off"
+expect = ["wiki/incidents/2026-06-08-reminders-wrong-timezone.md"]
+category = "incident"
+paraphrase = true
+
+[[q]]
+id = "ho-15"
+q = "why did the web server run out of space on D: in August?"
+expect = ["wiki/incidents/2026-08-16-disk-full-web-srv.md"]
+category = "incident"
+paraphrase = false
+
+[[q]]
+id = "ho-16"
+q = "visitors saw a browser security warning on the reservation site, what was the cause?"
+expect = ["wiki/incidents/2026-09-23-cert-expiry-booking-outage.md"]
+category = "incident"
+paraphrase = true
+
+[[q]]
+id = "ho-17"
+q = "why was every glaze stock level doubled after someone launched the sync by hand?"
+expect = ["wiki/incidents/2026-09-14-inventory-sync-duplicate-glazes.md"]
+category = "incident"
+paraphrase = true
+
+[[q]]
+id = "ho-18"
+q = "did we ever evaluate switching the reservations store to a client-server database?"
+expect = ["wiki/decisions/2026-02-10-bookings-to-postgres.md"]
+category = "decision"
+paraphrase = true
+
+[[q]]
+id = "ho-19"
+q = "did we try pushing live temperatures to the dashboard instead of polling?"
+expect = ["wiki/decisions/2026-03-02-websockets-kiln-telemetry.md"]
+category = "decision"
+paraphrase = true
+
+[[q]]
+id = "ho-20"
+q = "was a generative AI ever tried for answering student questions?"
+expect = ["wiki/decisions/2026-06-15-llm-chatbot-rewrite.md"]
+category = "decision"
+paraphrase = true
+
+[[q]]
+id = "ho-21"
+q = "should checkout fall back to a different card company when ours is down?"
+expect = ["wiki/decisions/2026-09-20-second-payment-provider.md"]
+category = "decision"
+paraphrase = true
+
+[[q]]
+id = "ho-22"
+q = "why did we decide against automatically retrying declined charges?"
+expect = ["wiki/decisions/2026-04-20-auto-retry-failed-payments.md"]
+category = "decision"
+paraphrase = true
+
+[[q]]
+id = "ho-23"
+q = "where is the function that rejects a temperature ramp above the maximum?"
+expect = ["repo/scheduler/validator.py"]
+category = "code"
+paraphrase = true
+
+[[q]]
+id = "ho-24"
+q = "which script does the online sqlite copy and prunes old files?"
+expect = ["repo/jobs/nightly_backup.py"]
+category = "code"
+paraphrase = true
+
+[[q]]
+id = "ho-25"
+q = "where do we convert a UTC class start to the studio's local time for emails?"
+expect = ["repo/booking/reminders.py"]
+category = "code"
+paraphrase = true
+
+[[q]]
+id = "ho-26"
+q = "where is the upsert for glaze stock from the supplier CSV?"
+expect = ["repo/jobs/inventory_sync.py"]
+category = "code"
+paraphrase = true
+
+[[q]]
+id = "ho-27"
+q = "issue_refund function"
+expect = ["repo/booking/refunds.py"]
+category = "code"
+paraphrase = false
+
+[[q]]
+id = "ho-28"
+q = "which module tokenizes the schedule language and checks braces?"
+expect = ["repo/scheduler/kiln_parser.py"]
+category = "code"
+paraphrase = true
+
+[[q]]
+id = "ho-29"
+q = "where does the code store temperature readings for each heating run in the database?"
+expect = ["repo/scheduler/firing_log.py"]
+category = "code"
+paraphrase = true
+
+[[q]]
+id = "ho-30"
+q = "PriceCache time-to-live class"
+expect = ["repo/chatbot/prices.py"]
+category = "code"
+paraphrase = false
+
+[[q]]
+id = "ho-31"
+q = "what port does the scheduler status API listen on?"
+expect = ["wiki/systems/studio-srv.md"]
+category = "fact"
+paraphrase = false
+
+[[q]]
+id = "ho-32"
+q = "where is the card processor secret kept?"
+expect = ["wiki/systems/web-srv.md", "wiki/runbooks/rotate-payment-key.md"]
+category = "fact"
+paraphrase = true
+
+[[q]]
+id = "ho-33"
+q = "when does the daily payment reconciliation run?"
+expect = ["wiki/systems/scheduled-tasks.md", "inventory/tasks.json"]
+category = "fact"
+paraphrase = false
+
+[[q]]
+id = "ho-34"
+q = "how many days do we keep database backups?"
+expect = ["wiki/systems/backup-system.md"]
+category = "fact"
+paraphrase = true
+
+[[q]]
+id = "ho-35"
+q = "how is the third furnace's controller connected, serial or network?"
+expect = ["wiki/systems/studio-srv.md"]
+category = "fact"
+paraphrase = true
+
+[[q]]
+id = "ho-36"
+q = "which folder holds the live website release and what is the current junction?"
+expect = ["wiki/systems/web-srv.md"]
+category = "fact"
+paraphrase = true
+
+[[q]]
+id = "ho-37"
+q = "how far off was the k1 thermocouple compared with the handheld probe?"
+expect = ["legacy/notes.md"]
+category = "legacy"
+paraphrase = false
+
+[[q]]
+id = "ho-38"
+q = "which crate are the test tiles supposed to go in, and how are they numbered?"
+expect = ["legacy/notes.md"]
+category = "legacy"
+paraphrase = true
+
+[[q]]
+id = "ho-39"
+q = "am I allowed to push a new website version whenever tests pass?"
+expect = ["wiki/rules.md"]
+category = "rules"
+paraphrase = true
+
+[[q]]
+id = "ho-40"
+q = "can I delete obsolete rows from a production sqlite table?"
+expect = ["wiki/rules.md"]
+category = "rules"
+paraphrase = true

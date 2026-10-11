@@ -1,0 +1,30 @@
+// Shared constants, kilns and macros for all Emberline firing profiles.
+const MAX_TEMP = 1285;              // degrees C, controller hard limit
+const COOL_FLOOR = 760;             // below this the glaze is set, free cooling is fine
+
+kiln k1 {
+    model "Fictional ProFire 5";
+    zones 1;
+    thermocouple "type K";
+}
+
+kiln k2 {
+    model "Fictional ProFire 7";
+    zones 3;
+    thermocouple "type S";
+}
+
+kiln k3 {
+    model "Fictional ProFire 7";
+    zones 3;
+    thermocouple "type S";
+}
+
+macro slow_cool(rate, floor) {
+    ramp -rate/h to floor;
+}
+
+macro candle(temp, minutes) {
+    ramp 60/h to temp;
+    hold minutes;
+}

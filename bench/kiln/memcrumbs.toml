@@ -1,0 +1,31 @@
+# The public bench project (invented): MEMCRUMBS_PROJECTS=bench memcrumbs -p kiln bench bench/questions.toml
+name = "kiln"
+title = "Emberline Ceramics (bench)"
+wiki = "wiki"
+repos = ["repo"]
+plugins = ["plugins/kiln_outline.py", "plugins/tasks.py"]
+
+[[docs]]
+name = "legacy-notes"
+root = "legacy"
+include = ["**/*.md"]
+kind = "legacy"
+
+[tasks]                          # plugins/tasks.py: an exported scheduled-task inventory (live state)
+inventory = "inventory/tasks.json"
+
+[check]
+max_lines = 300
+stale_days = 45
+
+[status]
+sections = ["rules", "map", "gotchas", "tasks", "journal"]
+max_tokens = 1000
+
+[facts.bind.booking_version]     # read from the source on every lookup, so it cannot go stale
+from = "repo/booking/__init__.py"
+pattern = '__version__ = "([^"]+)"'
+
+[facts.bind.booking_port]
+from = "repo/config/booking.toml"
+pattern = '(?m)^port = (\d+)'

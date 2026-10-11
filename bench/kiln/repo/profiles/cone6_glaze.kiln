@@ -1,0 +1,23 @@
+// Cone 6 oxidation glaze firing for kiln k2 (3 zones).
+// Owner sign-off required before any change (see wiki rules).
+include "common.kiln";
+
+profile cone6_glaze (kiln: k2, cone: 6) {
+    segment warmup {
+        ramp 80/h to 220;
+        hold 30m;
+    }
+    segment burnout {
+        ramp 120/h to 600;
+        hold 10m;
+    }
+    segment glaze_melt {
+        ramp 150/h to 1222;
+        hold 10m;
+    }
+    use slow_cool(100, 760);
+    on fault {
+        alarm "door open";
+        abort;
+    }
+}

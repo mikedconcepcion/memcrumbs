@@ -1,0 +1,24 @@
+// Cone 10 reduction stoneware firing for k3. Reduction is started by hand at 960 C.
+include "common.kiln";
+
+const REDUCTION_START = 960;
+
+profile cone10_reduction (kiln: k3, cone: 10) {
+    segment early {
+        ramp 100/h to 400;
+        hold 20m;
+    }
+    segment mid {
+        ramp 140/h to REDUCTION_START;
+        hold 30m;
+    }
+    segment finish {
+        ramp 90/h to 1280;
+        hold 15m;
+    }
+    use slow_cool(150, 800);
+    on fault {
+        alarm "over temperature";
+        abort;
+    }
+}

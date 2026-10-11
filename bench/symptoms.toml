@@ -1,0 +1,62 @@
+# Symptom-phrased incident questions: what someone about to repeat an incident sees first.
+# Written before any incident had `symptom:`; report apart from dev and holdout.
+
+[[q]]
+id = "sy-01"
+category = "symptom"
+q = "scheduler status API goes silent every third day"
+expect = ["wiki/incidents/2026-03-14-72h-task-limit-kills-scheduler.md"]
+
+[[q]]
+id = "sy-02"
+category = "symptom"
+q = "a student was billed twice for the same class"
+expect = ["wiki/incidents/2026-04-02-double-charge-on-retry.md"]
+
+[[q]]
+id = "sy-03"
+category = "symptom"
+q = "a whole glaze load came out ruined, way too hot"
+expect = ["wiki/incidents/2026-05-19-kiln-overfire-profile-typo.md"]
+
+[[q]]
+id = "sy-04"
+category = "symptom"
+q = "the reminder email shows the wrong time for the class"
+expect = ["wiki/incidents/2026-06-08-reminders-wrong-timezone.md"]
+
+[[q]]
+id = "sy-05"
+category = "symptom"
+q = "booking website errors at night saying the database is locked"
+expect = ["wiki/incidents/2026-07-11-bookings-db-locked-by-backup.md"]
+
+[[q]]
+id = "sy-06"
+category = "symptom"
+q = "reminder emails stopped and the task finishes instantly"
+expect = ["wiki/incidents/2026-07-29-bom-breaks-scheduled-task.md"]
+
+[[q]]
+id = "sy-07"
+category = "symptom"
+q = "new bookings fail with an I/O error on the server"
+expect = ["wiki/incidents/2026-08-16-disk-full-web-srv.md"]
+
+[[q]]
+id = "sy-08"
+category = "symptom"
+q = "the chatbot quotes an old price to students"
+expect = ["wiki/incidents/2026-09-02-chatbot-stale-prices.md"]
+
+[[q]]
+id = "sy-09"
+category = "symptom"
+q = "glaze stock counts doubled overnight"
+expect = ["wiki/incidents/2026-09-14-inventory-sync-duplicate-glazes.md"]
+
+[[q]]
+id = "sy-10"
+category = "symptom"
+q = "browser warns that the booking site is not secure"
+expect = ["wiki/incidents/2026-09-23-cert-expiry-booking-outage.md"]

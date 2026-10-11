@@ -1,0 +1,22 @@
+// Crystalline glaze firing with a long crystal-growth hold. Needs 3 zones, so k2 or k3.
+include "common.kiln";
+
+profile crystalline_glaze (kiln: k3, cone: 9) {
+    segment rise {
+        ramp 180/h to 1250;
+        hold 5m;
+    }
+    segment drop_to_growth {
+        ramp -120/h to 1120;
+        hold 4h;
+    }
+    segment second_growth {
+        ramp -60/h to 1040;
+        hold 2h;
+    }
+    use slow_cool(80, 760);
+    on fault {
+        alarm "zone imbalance";
+        abort;
+    }
+}

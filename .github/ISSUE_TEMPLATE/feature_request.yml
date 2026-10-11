@@ -1,0 +1,21 @@
+name: Feature request
+description: An idea, or something memcrumbs could do better.
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: goal
+    attributes:
+      label: What were you trying to do?
+      description: The task, and where memcrumbs got in the way or fell short.
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: What would help
+      description: What you would like to happen. Optional, the goal above matters most.
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: What you do today instead
+      description: A workaround, another tool, or nothing.

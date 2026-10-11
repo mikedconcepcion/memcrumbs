@@ -1,0 +1,279 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{TITLE}} · memcrumbs</title>
+<style>
+:root{--bg:#f5f4ef;--bg2:#ecebe4;--card:#fff;--ink:#1b1b18;--muted:#6c6b64;--faint:#a3a298;--line:#e6e4dc;
+--accent:#5b5bd6;--accent-soft:#ececfb;--ok:#1f9d55;--ok-soft:#e1f3e8;--fresh2:#8fd1a8;--warn:#c27400;--warn-soft:#fbefd9;
+--bad:#d33a3a;--bad-soft:#fbe4e4;--shadow:0 1px 2px rgba(30,30,10,.05),0 6px 20px rgba(30,30,10,.05);
+--k-decision:#7c5cdb;--k-incident:#e0662c;--k-runbook:#119c8f;--k-component:#3a7bd5;--k-system:#2f9bd0;
+--k-reference:#7a8699;--k-journal:#a39e93;--k-other:#c09a3e;--k-pink:#c8459b;--k-lime:#6a9f1e;color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e1014;--bg2:#141822;--card:#161a22;--ink:#e9e8e3;
+--muted:#9b9b94;--faint:#5f6068;--line:#262b36;--accent:#9091f6;--accent-soft:#23254a;--ok:#3cc47a;--ok-soft:#13301f;
+--fresh2:#2c7a4c;--warn:#f0a63a;--warn-soft:#3a2a10;--bad:#f06464;--bad-soft:#3d1818;--shadow:0 1px 2px rgba(0,0,0,.4);
+--k-decision:#9b80f0;--k-incident:#f0844f;--k-runbook:#2bbcae;--k-component:#5a98ee;--k-system:#4bb5e6;
+--k-reference:#94a0b4;--k-journal:#8f8a80;--k-other:#d6b25a;--k-pink:#e070b8;--k-lime:#94c94a;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0e1014;--bg2:#141822;--card:#161a22;--ink:#e9e8e3;--muted:#9b9b94;--faint:#5f6068;
+--line:#262b36;--accent:#9091f6;--accent-soft:#23254a;--ok:#3cc47a;--ok-soft:#13301f;--fresh2:#2c7a4c;--warn:#f0a63a;
+--warn-soft:#3a2a10;--bad:#f06464;--bad-soft:#3d1818;--shadow:0 1px 2px rgba(0,0,0,.4);--k-decision:#9b80f0;
+--k-incident:#f0844f;--k-runbook:#2bbcae;--k-component:#5a98ee;--k-system:#4bb5e6;--k-reference:#94a0b4;
+--k-journal:#8f8a80;--k-other:#d6b25a;--k-pink:#e070b8;--k-lime:#94c94a;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+-webkit-font-smoothing:antialiased}
+code,.mono{font-family:ui-monospace,"Cascadia Code",Consolas,Menlo,monospace;font-size:12.5px}
+main{max-width:1200px;margin:0 auto;padding:0 16px 64px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:20px 0 12px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:12px;min-width:0}
+.brand h1{font-size:21px;margin:0;letter-spacing:-.01em;overflow-wrap:anywhere}
+.sub{color:var(--muted);font-size:12.5px}
+.iconbtn{background:var(--card);border:1px solid var(--line);color:var(--ink);border-radius:999px;padding:6px 12px;
+cursor:pointer;font:inherit;font-size:12.5px}
+nav.tabs{display:flex;gap:4px;overflow-x:auto;padding:4px;background:var(--bg2);border-radius:12px;margin:4px 0 18px;
+position:sticky;top:8px;z-index:5;scrollbar-width:none}
+nav.tabs a{flex:0 0 auto;padding:7px 14px;border-radius:9px;color:var(--muted);text-decoration:none;font-weight:500;
+font-size:13.5px;display:flex;gap:6px;align-items:center}
+nav.tabs a:hover{color:var(--ink)}
+nav.tabs a[aria-current="page"]{background:var(--card);color:var(--ink);box-shadow:var(--shadow)}
+.badge{font-size:11px;border-radius:999px;padding:0 7px;background:var(--accent-soft);color:var(--accent);font-weight:600}
+.badge.bad{background:var(--bad-soft);color:var(--bad)}.badge.warn{background:var(--warn-soft);color:var(--warn)}
+section[data-tab]{display:none}section[data-tab].on{display:block;animation:fade .18s ease-out}
+@keyframes fade{from{opacity:0;transform:translateY(3px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){section[data-tab].on{animation:none}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;box-shadow:var(--shadow);
+margin-bottom:16px;min-width:0}
+.card h2{font-size:15px;margin:0 0 4px;letter-spacing:-.005em}.card h2+.sub{margin-bottom:12px}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.grid4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+@media (max-width:900px){.grid4{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:760px){.grid2{grid-template-columns:minmax(0,1fr)}}
+.hero{display:grid;grid-template-columns:auto minmax(0,1fr);gap:24px;align-items:center}
+@media (max-width:620px){.hero{grid-template-columns:minmax(0,1fr);justify-items:center;text-align:center}}
+.verdict{font-size:22px;font-weight:650;letter-spacing:-.01em;margin:0}
+.verdict.ok{color:var(--ok)}.verdict.warn{color:var(--warn)}.verdict.bad{color:var(--bad)}
+.delta{font-size:12.5px;font-weight:600;border-radius:999px;padding:1px 8px;margin-left:6px;vertical-align:middle}
+.delta.up{background:var(--ok-soft);color:var(--ok)}.delta.down{background:var(--warn-soft);color:var(--warn)}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px;box-shadow:var(--shadow);min-width:0}
+.kpi .k{color:var(--muted);font-size:12.5px}.kpi .v{font-size:26px;font-weight:650;letter-spacing:-.02em;
+font-variant-numeric:tabular-nums;line-height:1.25}.kpi .v small{font-size:14px;color:var(--muted);font-weight:500}
+.kpi .foot{color:var(--muted);font-size:12px;margin-top:6px}
+.meter{height:8px;border-radius:99px;background:var(--bg2);overflow:hidden;display:flex;margin-top:8px}
+.meter i{display:block;height:100%}
+.actions{list-style:none;margin:0;padding:0}
+.actions li{display:grid;grid-template-columns:12px minmax(0,1fr) auto;gap:12px;align-items:start;padding:12px 0;
+border-top:1px solid var(--line)}
+.actions li:first-child{border-top:0}
+.dot{width:10px;height:10px;border-radius:50%;margin-top:6px;background:var(--accent)}
+.dot.bad{background:var(--bad);box-shadow:0 0 0 4px var(--bad-soft)}.dot.warn{background:var(--warn);box-shadow:0 0 0 4px var(--warn-soft)}
+.dot.ok{background:var(--ok);box-shadow:0 0 0 4px var(--ok-soft)}.dot.info{box-shadow:0 0 0 4px var(--accent-soft)}
+.actions b{font-weight:600}.actions .why{color:var(--muted);font-size:12.5px;overflow-wrap:anywhere}
+.go{font:inherit;font-size:12.5px;padding:5px 11px;border-radius:8px;border:1px solid var(--line);background:var(--card);
+color:var(--ink);cursor:pointer;text-decoration:none;white-space:nowrap}
+.go:hover,.iconbtn:hover{border-color:var(--accent)}
+.cmd{display:inline-flex;align-items:center;gap:8px;max-width:100%;background:var(--bg2);border-radius:8px;
+padding:4px 6px 4px 10px;margin-top:6px}
+.cmd code{overflow-wrap:anywhere;white-space:pre-wrap}
+.cmd button{font:inherit;font-size:11.5px;border:0;border-radius:6px;padding:3px 8px;background:var(--card);
+color:var(--muted);cursor:pointer}
+.cmd button:hover{color:var(--ink)}
+.strip{display:grid;grid-template-columns:repeat(auto-fill,minmax(16px,1fr));gap:4px;margin:12px 0 10px}
+.strip span{aspect-ratio:1;border-radius:4px;background:var(--bg2)}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;color:var(--muted);font-size:12px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+.rank{list-style:none;margin:0;padding:0}
+.rank li{display:grid;grid-template-columns:minmax(0,1fr) minmax(60px,38%) 42px;gap:10px;align-items:center;padding:5px 0}
+.rank .t{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rank .b{height:8px;border-radius:99px;background:var(--bg2);overflow:hidden}.rank .b i{display:block;height:100%;
+background:var(--accent);border-radius:99px}
+.rank .n{text-align:right;font-variant-numeric:tabular-nums;color:var(--muted);font-size:12.5px}
+.chart{width:100%;height:auto;display:block}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0}
+.chip{display:inline-flex;align-items:center;gap:5px;background:var(--bg2);border-radius:999px;padding:2px 9px;font-size:12px;
+border:1px solid transparent;color:var(--ink);white-space:nowrap}
+button.chip{cursor:pointer;font:inherit;font-size:12px}button.chip[aria-pressed="true"]{border-color:var(--accent);
+background:var(--accent-soft);color:var(--accent)}
+.chip.bad{background:var(--bad-soft);color:var(--bad)}.chip.warn{background:var(--warn-soft);color:var(--warn)}
+.chip.ok{background:var(--ok-soft);color:var(--ok)}
+.sw{width:8px;height:8px;border-radius:50%;display:inline-block}
+.tablewrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{color:var(--muted);font-weight:500;font-size:12px;white-space:nowrap}
+tr:last-child td{border-bottom:0}td.n{text-align:right;font-variant-numeric:tabular-nums}
+tbody tr:hover{background:var(--bg2)}
+.agebar{height:5px;border-radius:99px;background:var(--bg2);min-width:70px;margin-top:4px;overflow:hidden}
+.agebar i{display:block;height:100%;border-radius:99px}
+.controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:12px 0}
+input{font:inherit;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:8px;padding:6px 10px}
+input:focus,button:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+input[type=number]{width:120px}input[type=search]{width:min(280px,100%)}
+input[type=checkbox]{width:16px;height:16px;accent-color:var(--accent);padding:0}
+.btn{font:inherit;font-size:13px;padding:6px 12px;border-radius:8px;border:1px solid var(--line);background:var(--card);
+color:var(--ink);cursor:pointer}.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.budget{margin:6px 0 4px}.budget .meter{height:12px}
+.over{color:var(--bad);font-weight:600}
+pre.command{background:var(--bg2);border-radius:10px;padding:12px;white-space:pre-wrap;word-break:break-all;margin:10px 0}
+.note{color:var(--muted);font-size:12.5px;margin:6px 0 0}
+.empty{display:flex;flex-direction:column;align-items:center;gap:6px;padding:22px 8px;color:var(--muted);text-align:center}
+.empty b{color:var(--ink);font-size:15px}
+.mapwrap{display:grid;grid-template-columns:minmax(0,1fr) 260px;gap:16px}
+@media (max-width:860px){.mapwrap{grid-template-columns:minmax(0,1fr)}}
+#graph{width:100%;height:auto;aspect-ratio:4/3;background:radial-gradient(circle at 50% 45%,var(--bg2),transparent 70%);
+border-radius:12px;touch-action:none}
+#graph .node{cursor:pointer;transition:opacity .15s}#graph .edge{stroke:var(--faint);stroke-opacity:.55}
+#graph.focus .node:not(.near){opacity:.18}#graph.focus .edge:not(.near){stroke-opacity:.08}
+#graph .edge.near{stroke:var(--accent);stroke-opacity:.9}
+#graph text{display:none;font-size:11px;fill:var(--ink);pointer-events:none;paint-order:stroke;stroke:var(--card);stroke-width:3px;stroke-linejoin:round}
+#graph text.show{display:block}#graph.focus text.show{display:none}#graph.focus text.near{display:block}
+.panel{border:1px solid var(--line);border-radius:12px;padding:14px;background:var(--bg)}
+.panel h3{margin:0 0 4px;font-size:14px;overflow-wrap:anywhere}
+.timeline{list-style:none;margin:0;padding:0 0 0 18px;border-left:2px solid var(--line)}
+.timeline li{position:relative;padding:0 0 16px 14px}
+.timeline li::before{content:"";position:absolute;left:-25px;top:5px;width:12px;height:12px;border-radius:50%;
+background:var(--tl,var(--accent));box-shadow:0 0 0 3px var(--card)}
+.timeline .when{color:var(--muted);font-size:12px;font-variant-numeric:tabular-nums}
+.timeline .what{font-weight:600}
+.findings td:first-child{width:1%}
+footer{color:var(--muted);font-size:12px;text-align:center;margin-top:28px}
+.wiki{display:grid;grid-template-columns:290px minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:860px){.wiki{grid-template-columns:minmax(0,1fr)}.tree{max-height:45vh}}
+.tree{position:sticky;top:66px;max-height:calc(100vh - 84px);overflow:auto;padding:14px}
+.tree input{width:100%;margin-bottom:4px}
+.tree .grp{margin:14px 8px 4px;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.07em;
+display:flex;justify-content:space-between}
+.tree a{display:flex;align-items:center;gap:8px;padding:5px 8px;border-radius:8px;color:var(--ink);text-decoration:none;
+font-size:13px}
+.tree a:hover{background:var(--bg2)}.tree a[aria-current="page"]{background:var(--accent-soft);color:var(--accent);font-weight:600}
+.tree a .tt{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fd{width:7px;height:7px;border-radius:50%;flex:0 0 auto}
+.pagehead h1{font-size:25px;margin:0 0 8px;letter-spacing:-.015em;overflow-wrap:anywhere}
+.pagehead .lead{font-size:15px;color:var(--muted);margin:8px 0 6px;max-width:780px}
+.md{max-width:780px;font-size:14.5px;line-height:1.68;overflow-wrap:anywhere;border-top:1px solid var(--line);
+margin-top:14px;padding-top:6px}
+.md h2{font-size:19px;margin:26px 0 8px;letter-spacing:-.01em}.md h3{font-size:16px;margin:22px 0 6px}
+.md h4,.md h5,.md h6{font-size:14.5px;margin:18px 0 6px}
+.md p{margin:10px 0}.md ul,.md ol{margin:8px 0;padding-left:22px}.md li{margin:3px 0}
+.md code{background:var(--bg2);border-radius:5px;padding:1px 5px}
+.md pre.code{background:var(--bg2);border-radius:10px;padding:12px 14px;overflow-x:auto;line-height:1.5}
+.md pre.code code{background:none;padding:0;white-space:pre}
+.md blockquote{margin:12px 0;padding:4px 14px;border-left:3px solid var(--accent);color:var(--muted);background:var(--bg2);
+border-radius:0 8px 8px 0}
+.md .tablewrap{margin:12px 0}.md th{color:var(--ink);font-weight:600;background:var(--bg2)}
+.md hr{border:0;border-top:1px solid var(--line);margin:20px 0}
+.md a,a.wl{color:var(--accent);text-decoration:none;border-bottom:1px solid var(--accent-soft)}
+.md a:hover,a.wl:hover{border-bottom-color:var(--accent)}
+.md .broken{color:var(--warn);border-bottom:1px dashed var(--warn);cursor:help}
+.callout{border-radius:10px;padding:10px 14px;margin:12px 0;background:var(--warn-soft);color:var(--ink);font-size:13px}
+.related{margin-top:22px;border-top:1px solid var(--line);padding-top:12px}a.chip{text-decoration:none}a.chip:hover{border-color:var(--accent)}
+</style>
+</head>
+<body>
+<main>
+<header class="top">
+<div class="brand">
+<svg width="34" height="34" viewBox="0 0 34 34" aria-hidden="true"><rect width="34" height="34" rx="9" fill="var(--accent)"/>
+<circle cx="10" cy="22" r="3" fill="#fff"/><circle cx="17" cy="15" r="3" fill="#fff" opacity=".85"/>
+<circle cx="24" cy="10" r="3" fill="#fff" opacity=".6"/></svg>
+<div><h1 id="title"></h1><div class="sub" id="meta"></div></div></div>
+<button class="iconbtn" id="theme" type="button" title="Theme">Theme: auto</button>
+</header>
+
+<nav class="tabs" id="tabs" aria-label="Sections">
+<a href="#overview">Overview</a><a href="#wiki">Wiki</a><a href="#refresh">Refresh <span class="badge" id="b-refresh"></span></a>
+<a href="#pages">Pages</a><a href="#map">Knowledge map</a><a href="#history">Decisions &amp; incidents</a>
+<a href="#usage">Agent usage</a><a href="#checks">Checks <span class="badge" id="b-checks"></span></a></nav>
+
+<section data-tab="overview">
+<div class="card hero"><div id="ring"></div>
+<div><p class="sub" style="margin:0">Wiki trust · pages that are verified, current and clean</p>
+<p class="verdict" id="verdict"></p><p class="sub" id="verdictwhy" style="margin:4px 0 10px"></p><div id="trend"></div></div></div>
+<div class="grid4" id="kpis" style="margin-bottom:16px"></div>
+<div class="card"><h2>Needs you</h2><div class="sub">The few things worth your attention, most important first.</div>
+<ul class="actions" id="actions"></ul></div>
+<div class="grid2">
+<div class="card"><h2>Freshness</h2><div class="sub">One square per page, freshest first. Hover for the page.</div>
+<div class="strip" id="strip"></div><div class="legend" id="striplegend"></div></div>
+<div class="card"><h2>What every session starts with</h2><div class="sub" id="hdrsub"></div>
+<div class="meter" id="hdrbar" style="height:14px"></div><div class="legend" id="hdrlegend" style="margin-top:10px"></div>
+<p class="note" id="hdrnote"></p></div>
+</div>
+<div class="grid2">
+<div class="card"><h2>What your agent reads most</h2><div class="sub">Pages served by find and page.</div>
+<ul class="rank" id="toppages"></ul></div>
+<div class="card"><h2>Lookups, last 30 days</h2><div class="sub" id="lookupsub"></div><div id="lookups"></div></div>
+</div>
+</section>
+
+<section data-tab="wiki">
+<div class="wiki"><aside class="card tree" aria-label="Wiki pages">
+<input type="search" id="wikisearch" placeholder="Find a page or a word  ( / )" aria-label="Find a page">
+<div class="sub" id="wikicount" style="margin:0 8px"></div><nav id="wikitree"></nav></aside>
+<article class="card" id="wikipage"></article></div>
+</section>
+
+<section data-tab="refresh">
+<div class="card"><h2>Wiki refresh</h2>
+<div class="sub">Re-indexing is free and local. Refreshing a page means an agent re-reads what changed and rewrites the page,
+which costs model tokens. Pick the pages worth it and a budget, run the command, then tell the agent
+<code>memcrumbs plan next</code>; it stops when the budget is used. Token figures are estimates (characters / 4).</div>
+<div id="approved" class="note"></div>
+<div class="controls"><label>Budget <input type="number" id="budget" min="0" step="1000"> tokens</label>
+<button class="btn" id="fit" type="button">Pick the top within budget</button><button class="btn" id="all" type="button">All</button>
+<button class="btn" id="none" type="button">None</button></div>
+<div class="budget"><div class="meter"><i id="budgetfill" style="background:var(--accent)"></i></div>
+<div class="sub" id="sum" style="margin-top:4px"></div></div>
+<div class="tablewrap"><table><thead><tr><th></th><th>Page</th><th>Why</th><th style="text-align:right">Est. tokens</th>
+<th style="text-align:right">Reads</th><th>State</th></tr></thead><tbody id="items"></tbody></table></div>
+<div class="controls" id="morebar" hidden><button class="btn" id="more" type="button"></button>
+<span class="note">Selections in hidden rows still count.</span></div>
+<pre class="command mono" id="cmd"></pre><button class="btn primary" id="copy" type="button">Copy command</button>
+</div></section>
+
+<section data-tab="pages">
+<div class="card"><h2>Pages</h2><div class="sub" id="pagesub"></div>
+<div class="controls"><input type="search" id="filter" placeholder="Search pages" aria-label="Search pages"></div>
+<div class="chips" id="kindchips"></div>
+<div class="tablewrap"><table><thead><tr><th>Page</th><th>Kind</th><th>Verified</th><th>Age</th><th>Status</th>
+<th style="text-align:right">Lines</th><th style="text-align:right">Reads</th></tr></thead><tbody id="pages"></tbody></table></div>
+</div></section>
+
+<section data-tab="map">
+<div class="card"><h2>Knowledge map</h2><div class="sub">Pages and their <code>[[links]]</code>, grouped by kind, sized by reads.
+Stale pages have an amber ring. Click a page to see its neighbours.</div>
+<div class="chips" id="maplegend"></div>
+<div class="mapwrap"><svg id="graph" role="img" aria-label="Knowledge map of wiki pages"></svg>
+<div class="panel" id="mappanel"></div></div></div>
+</section>
+
+<section data-tab="history">
+<div class="card"><h2>Decisions &amp; incidents</h2><div class="sub">The project's story, newest first.</div>
+<div class="chips" id="tlchips"></div><ul class="timeline" id="timeline"></ul></div>
+</section>
+
+<section data-tab="usage">
+<div class="grid2">
+<div class="card"><h2>Lookups per day</h2><div class="sub">Counts only: queries and text are never logged.</div><div id="lookups2"></div></div>
+<div class="card"><h2>Recall on your questions</h2><div class="sub">From your private bench: questions you asked, the page that answers.</div>
+<div id="bench"></div></div></div>
+<div class="card"><h2>Commands</h2><div class="sub">Output size and speed per command.</div>
+<div class="tablewrap"><table><thead><tr><th>Command</th><th style="text-align:right">Runs</th><th style="text-align:right">p50 tokens</th>
+<th style="text-align:right">p95 tokens</th><th style="text-align:right">Cut</th><th style="text-align:right">p95 ms</th>
+<th style="text-align:right">Found nothing</th></tr></thead><tbody id="usagetbl"></tbody></table></div></div>
+</section>
+
+<section data-tab="checks">
+<div class="card"><h2>Checks</h2><div class="chips" id="checkchips"></div>
+<div class="tablewrap"><table class="findings"><tbody id="findings"></tbody></table></div></div>
+<div class="card"><h2>Recent journal</h2><ul class="timeline" id="journal"></ul></div>
+</section>
+
+<footer>A static snapshot: it reads and writes nothing. <span id="regen"></span></footer>
+</main>
+<script id="data" type="application/json">{{DATA}}</script>
+<script>
+{{SCRIPT}}
+</script>
+</body>
+</html>

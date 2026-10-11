@@ -1,0 +1,45 @@
+name: Bug report
+description: Something does not work as documented.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting. Please describe your project in generic words: never paste real page text,
+        hostnames, account names or secrets. Security problems go through a private report (see SECURITY.md).
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: The command you ran, what you expected, and what happened instead (error text or output).
+      placeholder: |
+        Ran: memcrumbs find "rollback steps"
+        Expected: the runbook first
+        Got: ...
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: How to reproduce
+      description: The smallest steps that show it. An invented page or file that triggers it helps a lot.
+  - type: textarea
+    id: doctor
+    attributes:
+      label: Output of `memcrumbs doctor --share`
+      description: Versions, counts, timings and pass/fail only. It holds no paths, names or page text.
+      render: json
+    validations:
+      required: true
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating system
+      options: [Windows, macOS, Linux, Other]
+    validations:
+      required: true
+  - type: input
+    id: agent
+    attributes:
+      label: Agent and version (if it matters)
+      placeholder: Claude Code 2.x, …

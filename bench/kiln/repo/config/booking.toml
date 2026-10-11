@@ -1,0 +1,25 @@
+# Booking app settings (web-srv). Secrets other than SMTP live in machine environment variables.
+[server]
+host = "127.0.0.1"
+port = 8080
+hold_minutes = 10
+
+[database]
+path = "D:/emberline/data/bookings.db"
+busy_timeout_ms = 5000
+
+[studio]
+timezone = "Europe/Dublin"
+currency = "EUR"
+
+[payments]
+provider_url = "https://pay.provider.example/v1"
+api_key_env = "PAYPROV_API_KEY"   # the key itself is NOT stored in this file
+timeout_seconds = 15
+
+[mail]
+smtp_host = "mail.emberline.example"
+smtp_port = 587
+smtp_user = "bookings@emberline.example"
+smtp_pass = "Hx4#nT9qLw"  # memcrumbs:allow
+from_name = "Emberline Ceramics"

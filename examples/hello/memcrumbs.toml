@@ -1,0 +1,9 @@
+# Example memcrumbs project. Try:  MEMCRUMBS_PROJECTS=examples memcrumbs -p hello find "rollback"
+name = "hello"
+title = "Hello API (example)"
+wiki = "wiki"
+repos = ["../hello-src"]
+
+[check]
+max_lines = 300
+stale_days = 3650

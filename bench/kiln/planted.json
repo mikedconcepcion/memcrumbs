@@ -1,0 +1,58 @@
+[
+  {
+    "file": "repo/config/booking.toml",
+    "fragments": [
+      "Hx4#nT",
+      "9qLw"
+    ]
+  },
+  {
+    "file": "repo/ops/Send-Alert.ps1",
+    "fragments": [
+      "q7Lw2T",
+      "nV9xKd",
+      "4HbR8s",
+      "Mz1PcY",
+      "f6JgA3",
+      "eU5oQi",
+      "X0tNyZ",
+      "8="
+    ]
+  },
+  {
+    "file": "repo/booking/tests/test_payments.py",
+    "fragments": [
+      "9fK2Lm",
+      "Qx7Tz4",
+      "WpB8cN",
+      "3vH6yD",
+      "1sA5gE",
+      "0r"
+    ]
+  },
+  {
+    "file": "legacy/notes.md",
+    "fragments": [
+      "Tn5!wK",
+      "8cRe"
+    ]
+  },
+  {
+    "file": "wiki/incidents/2026-08-16-disk-full-web-srv.md",
+    "fragments": [
+      "Mv6@jD",
+      "3zUq"
+    ]
+  },
+  {
+    "file": "wiki/runbooks/rotate-payment-key.md",
+    "fragments": [
+      "3bR7Nc",
+      "Y2xLk9",
+      "WqH5tV",
+      "d8PzJ4",
+      "mFs1Ga",
+      "E6"
+    ]
+  }
+]

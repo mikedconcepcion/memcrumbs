@@ -1,0 +1,90 @@
+# CLI reference (v1)
+
+`memcrumbs` (alias `memcrumb`). The project comes from `-p NAME`, `$MEMCRUMBS_PROJECT`, or the current
+directory (inside a project folder or one of its `repos`); with a single project configured, that one.
+`-p` may come before or after the subcommand.
+
+Options every command accepts: `--json` (one JSON object instead of text), `--full` (lift the output cap;
+for `index`, re-parse every file). Text output is capped: `find` at about 600 tokens, every other command at
+about 2,000; a cut output ends with `… cut N more lines … Next: <command>`. Tokens are estimated as chars/4.
+
+## Read
+
+| Command | What it prints |
+|---|---|
+| `find <words…> [-k KINDS] [-n N] [--explain]` | Ranked hits: `[kind] title › section — path:line · label` plus a snippet, then the exact command to read the top hit. When a top-3 hit's matching line links elsewhere ("… without a
+restart: [[live-tuning]]"), the linked page is shown under it as `→ see <page> — path:line` (rank unchanged). Inline filters: `kind:decision`, `status:rejected`, `path:booking` (`in:` = `path:`); filters alone list matching pages; with `status:` alone, pages whose own status matches come first, then
+the table rows and sections that carry it, each with `path:line`. `--explain` first shows how the query was read: each term, how many docs contain it, its synonyms (and whether they are damped), the intent (code first, runbooks first) |
+| `page <name> [section]` | Page header (title, path, trust label, summary, verified, status, tags), then the page, or a table of contents with line numbers if it is long, or one section with its subsections |
+| `outline <file\|dir> [--kinds K] [--grep W] [--depth N]` | Symbols with `Lstart-end`; a folder lists files with line and symbol counts. Needs no project |
+| `sym <name> [--in PATH] [--body] [-n N]` | Where a symbol is defined (exact, then prefix, then substring); `--body` prints the first match's source |
+| `about <file>` | What the wiki records about a file: the decisions (with their verdicts), incidents, gotchas, rules and pages that cite it in `sources:` or in their text, verdicts first, at most 5 lines (`--full` for all). A bare file name matches every citation of that name. Code hits in `find` and the end of `outline` carry one line, `cited by: 1 decision (REJECTED), 1 incident`, when decisions, incidents, gotchas or rules cite the file |
+| `fact [key]` | A current value from the facts registry (`wiki/facts.md`), with its source and age, in one line: `booking_version = 3.4.1 — bound to repo/booking/__init__.py · v3d · wiki/facts.md:14`. A key is matched exactly, else by its words or `about` phrases; no key lists them all |
+| `status [--hook]` | The session header (below). `--hook`: never fails, always exits 0 |
+| `stats [--usage]` | Index counts; `--usage`: output size (p50/p95/max tokens), truncation rate and p95 latency per command |
+| `check [--baseline] [--all] [--strict] [--dupes]` | Wiki lint + plugin checks: `E` secrets · `W` frontmatter, length, broken links, bad status, injection-like text, broken generated blocks, plugin load errors, a page that states a registered fact with another current value, an unknown `{{fact:key}}`, a fact binding that fails or disagrees with the table · `I` stale (`verified` too old, or `sources:` changed since), an incident with no symptom, a rejected or parked decision with no evidence, a runbook without preconditions / a verify step / a rollback, a page that replaces another without saying so. `--baseline` records today's warnings and curation steps, and later runs list only new ones (errors are never baselined); `--all` lists the known ones too; `--strict` exits 1 on new warnings as well; `--dupes` adds near-duplicate pages |
+| `bench [QUESTIONS.toml] [--min-recall3 X] [-k N]` | recall@1/@3, MRR, tokens per answer, latency, per category and for paraphrases; recall@3 also counting `→ see` pointers; lists misses. Default file: the project's `wiki/bench.toml` |
+| `plan [next]` | The wiki refresh plan: pages that need an agent (stale, sources changed, unverified, secrets, injection, broken links …) with priority and est. tokens. `next`: the next approved page for the agent, with the exact `git log` command for each changed source; stops at the budget |
+| `doctor [--share]` | Install, config (unknown or deprecated keys), wiki, `secrets.deny`, plugins, index, the wired hook *run for real* (exit 0, ms, tokens), usage, private bench, plan. `--share`: content-free JSON (versions, counts, timings, pass/fail) |
+| `scan [PATH]` | Secret scan of a folder, a file, an sdist or a wheel. Needs no project |
+
+Kinds for `-k` / `kind:`: `wiki` (all wiki kinds), `runbook`, `decision`, `incident`, `journal`, `doc`,
+`research`, `memory`, `legacy`, `code`, `bug`, `log`, plus any kind a plugin source emits.
+
+**Trust labels** on hits: `v12d` verified 12 days ago · `m3d` file modified 3 days ago (no `verified`) ·
+`STALE` older than `[check] stale_days`, or (in `page`) its `sources:` changed since it was verified ·
+`SUPERSEDED→page` · `REJECTED`, `PARKED`, `DRAFT` · `⚠INSTRUCTION-LIKE TEXT`.
+
+**The header** (`status`): a title line with index counts (or `index unavailable … may be stale` when the index
+is locked or broken — the header reads the wiki files, not the index), a look-up line, then the configured
+sections in order under one token cap: `rules` (rules.md `## Top`), `map` (index.md `## Map`), `gotchas`
+(gotchas.md `## Top`), `plan` (one line, only while the owner has approved refresh work), `journal` (last
+lines), plugin sections. Each section names its source file and age.
+A section over budget ends with `… N more (header budget): memcrumbs page X`; none is dropped.
+
+## Write (one deliberate command each; only inside the write set)
+
+| Command | Effect |
+|---|---|
+| `log <text…> [--tag T]` | Appends `- YYYY-MM-DD HH:MM text #tag` to `wiki/journal/YYYY-MM.md` |
+| `decision <title> --status accepted\|rejected\|parked\|superseded [--why W] [--tag T] [--considered "A; B"] [--evidence E] [--revisit-if R]` | New page `wiki/decisions/YYYY-MM-DD-slug.md` with Question / Options considered / What we tried / Evidence / Verdict / Why / Revisit if |
+| `incident <title> [--symptom S] [--cause C] [--fix F] [--guard G] [--lucky L] [--tag T]` | New page `wiki/incidents/YYYY-MM-DD-slug.md` with Symptom / What happened / Root cause / Fix / Guard (+ Where we got lucky). `--symptom` is what someone sees first, in their words; it is stored as `symptom:` and searched with the title, so a repeat is found by what it looks like |
+| `verify <page> [--date YYYY-MM-DD]` | Sets `verified:` (after you re-checked the facts); touches only that line |
+| `suggest [--kind K]` · `suggest show\|apply\|undo\|dismiss ID` | Offers with evidence, each with an id, a one-line why, counts and dates, the action and a risk: `dupes` (supersede one of two near-duplicate pages), `link` (pages that cite the same files but do not link), `split` (a page too big for one lookup; the agent does it), `guard` (a gotcha or rule that forbids a command becomes a permission `ask` rule with every word of the command; `apply ID --deny` makes it a refusal, on the owner's choice, for a line that is neither conditional nor limited to certain files or hosts), `unguard` (its line is gone: take the rule out), `gap` (lookups the wiki could not answer become a draft page), `memory` (an auto-memory note the wiki already holds becomes a pointer: its MEMORY.md line and its body, keeping the lines the page lacks), `skill` (repeated command sequences, repeated status queries or a runbook agents keep re-reading become a scaffolded `.claude/skills/NAME/SKILL.md`; `--name`, `--owner-only`, `--agent-may-use`; live or destructive ones default to owner-only), `rule` (a rule restated on two or more pages joins rules.md). `show` prints the dry-run patch as a diff; `apply ID` (or `apply --kind K` for all of a kind) writes it with backups, `--outside-wiki` when it writes outside the wiki, `--allow-destructive` when destructive; `undo ID` restores every byte if nothing changed since; `dismiss ID [--for 14d\|--never]` (it comes back after the period only if still true). The cheap kinds are re-scanned at most once a day after `check`, `index`, `dashboard`, `doctor` and the write commands; the header then says "N new suggestions" |
+| `rule <text…>` | Adds a standing rule to `rules.md` `## Top`; it reaches the session header after the owner's review. If it lands past the header's line cap (`[status] rules`, 8), it says so: move it up for it to show. The skill tells the agent to offer it when the owner corrects how it works |
+| `review [--approve all\|kept\|ID,…] [--kept]` | What waits for the owner: rule and gotcha lines added since the last review (they stay out of the session header until approved), and pages that an agent wrote (`written_by: agent`) no human has reviewed. `--approve` marks them reviewed, and is refused inside an agent shell (`CLAUDECODE` or `MEMCRUMBS_AGENT` set). The header lines present when review arrived were kept; `--kept` lists them once |
+| `quarantine <page> [--lift]` | Keeps a page on disk but out of the index and the header (`quarantined: true`); `--lift` puts it back and is refused inside an agent shell. Git is the rollback |
+| `supersede <page> [--by <page>]` | Sets `status: superseded` (+ `superseded_by:`), and `supersedes:` on the new page, so the link runs both ways; the old page then ranks below current ones |
+| `secret-add` | Reads a secret without echo; appends only its hash to `secrets.deny` |
+| `bench --add "<question>" --expect <page or file> [--category C]` | Appends a question to `wiki/bench.toml` (redacted): run it when a lookup missed |
+| `plan --approve <pages>\|top:N\|all [--budget N]` · `plan --budget N` · `plan --clear` | The owner approves pages and an est. token budget (state in the index folder); `verify <page>` marks an approved page done and charges its estimate |
+
+## Setup
+
+| Command | Effect |
+|---|---|
+| `init <name> [--repo PATH…] [--title T]` | Creates `<projects_dir>/<name>/` with `memcrumbs.toml`, `wiki/{index,gotchas,rules}.md`, `secrets.deny` |
+| `index [--full]` | Refreshes the index (the wiki is also checked on every command; other sources at most every 60 s) |
+| `wire [--repo P] [--target claude,agents] [--apply] [--remove] [--user-skill] [--allow]` | Dry run unless `--apply`. `--allow` adds allow rules for the read-only lookups (`find page outline sym status about fact`, with and without `-p NAME`, for the Bash and PowerShell tools) so they run without an approval prompt; write commands keep asking. `claude`: CLAUDE.md generated block, `.claude/settings.json` SessionStart hook, `.claude/skills/memcrumbs/SKILL.md` (`--user-skill`: `~/.claude/skills`). `agents`: AGENTS.md generated block. `--remove` takes out exactly what `wire` added — each file comes back byte for byte |
+| `template` | Prints the page skeleton |
+| `dashboard [--open]` | Writes `<project>/.memcrumbs/dashboard.html`: one static, self-contained page (no server, no network, no external scripts). An overview (trust score and trend, what needs you, freshness, header make-up, most-read pages, lookups per day), then tabs for the wiki itself (every page, redacted, rendered with clickable `[[links]]`), the refresh control (pick pages, set a budget, copy the approve command), pages, a knowledge map of `[[links]]`, decisions and incidents, agent usage and checks. The file holds the wiki's text, so share it as you would the wiki. Keeps one content-free line per day in `.memcrumbs/history.jsonl` for the trends |
+
+## Exit codes
+
+`0` success · `1` findings (`check` errors, `scan` hits, `bench` below `--min-recall3`) or an error with a
+message on stderr · `2` usage error. `status --hook` always exits `0`.
+
+## JSON
+
+Every command accepts `--json` and prints one object with `"cmd"` and the command's data (`hits`, `symbols`,
+`sections`, `findings`, `usage`, `total` …). A capped JSON output drops items from its main list and adds
+`"truncated": true` and `"next"`. A command that refuses once it has started (a bad `--date`, for example) still prints its
+object, with an `"error"` string, and exits non-zero. Strings in JSON pass the same redaction as text.
+
+## Stability
+
+From 1.0 the CLI (commands, flags, exit codes, JSON keys), the config schema ([config.md](config.md)) and the
+plugin API ([plugins.md](plugins.md)) follow semver: nothing is removed or changes meaning within a major
+version; a deprecated form keeps working, with a warning from `check`, for at least one minor release before
+it is removed in the next major. Text output is for agents and humans and may be reworded; scripts should use
+`--json`. The index format is a cache, not an interface: it is rebuilt when its schema version changes.

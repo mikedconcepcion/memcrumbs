@@ -1,0 +1,282 @@
+# Fresh holdout (written blind on 2026-10-11 by a separate agent; never used for tuning)
+# Paths in `expect` are relative to bench/kiln/.
+
+[[q]]
+id = "h2-01"
+q = "the website broke after a release, how do I go back to the last working version"
+expect = ["wiki/runbooks/rollback-booking.md"]
+category = "runbook"
+paraphrase = true
+
+[[q]]
+id = "h2-02"
+q = "deploy booking app steps"
+expect = ["wiki/runbooks/deploy-booking.md"]
+category = "runbook"
+paraphrase = false
+
+[[q]]
+id = "h2-03"
+q = "a student wants their money back, what do I do"
+expect = ["wiki/runbooks/issue-refund.md"]
+category = "runbook"
+paraphrase = true
+
+[[q]]
+id = "h2-04"
+q = "swap the card provider secret for a new one"
+expect = ["wiki/runbooks/rotate-payment-key.md"]
+category = "runbook"
+paraphrase = true
+
+[[q]]
+id = "h2-05"
+q = "the live data file is damaged and I need yesterday's copy back"
+expect = ["wiki/runbooks/restore-db-from-backup.md"]
+category = "runbook"
+paraphrase = true
+
+[[q]]
+id = "h2-06"
+q = "rebuild studio-srv from scratch"
+expect = ["wiki/runbooks/rebuild-studio-srv.md"]
+category = "runbook"
+paraphrase = false
+
+[[q]]
+id = "h2-07"
+q = "need to bounce the daemon while a kiln is hot without ruining the firing"
+expect = ["wiki/runbooks/restart-scheduler-mid-firing.md"]
+category = "runbook"
+paraphrase = true
+
+[[q]]
+id = "h2-08"
+q = "we bought another furnace, how do we hook it up to the system"
+expect = ["wiki/runbooks/add-new-kiln.md"]
+category = "runbook"
+paraphrase = true
+
+[[q]]
+id = "h2-09"
+q = "the bot still tells students the old price after the increase"
+expect = ["wiki/incidents/2026-09-02-chatbot-stale-prices.md"]
+category = "incident"
+paraphrase = true
+
+[[q]]
+id = "h2-10"
+q = "customers saw a browser security warning on the booking site"
+expect = ["wiki/incidents/2026-09-23-cert-expiry-booking-outage.md"]
+category = "incident"
+paraphrase = true
+
+[[q]]
+id = "h2-11"
+q = "eleven people were billed two times for one class"
+expect = ["wiki/incidents/2026-04-02-double-charge-on-retry.md"]
+category = "incident"
+paraphrase = true
+
+[[q]]
+id = "h2-12"
+q = "reminder email says 16:00 but the class starts at 18:00"
+expect = ["wiki/incidents/2026-06-08-reminders-wrong-timezone.md"]
+category = "incident"
+paraphrase = true
+
+[[q]]
+id = "h2-13"
+q = "disk full on web-srv, bookings failing with disk I/O error"
+expect = ["wiki/incidents/2026-08-16-disk-full-web-srv.md"]
+category = "incident"
+paraphrase = false
+
+[[q]]
+id = "h2-14"
+q = "kiln went 100 degrees past its target and a whole load was lost"
+expect = ["wiki/incidents/2026-05-19-kiln-overfire-profile-typo.md"]
+category = "incident"
+paraphrase = true
+
+[[q]]
+id = "h2-15"
+q = "scheduled task finishes in 0 seconds with result 0x1 but works fine by hand"
+expect = ["wiki/incidents/2026-07-29-bom-breaks-scheduled-task.md"]
+category = "incident"
+paraphrase = false
+
+[[q]]
+id = "h2-16"
+q = "why did we not switch bookings to Postgres"
+expect = ["wiki/decisions/2026-02-10-bookings-to-postgres.md"]
+category = "decision"
+paraphrase = false
+
+[[q]]
+id = "h2-17"
+q = "did anyone try pushing live temperatures to the dashboard instead of polling"
+expect = ["wiki/decisions/2026-03-02-websockets-kiln-telemetry.md"]
+category = "decision"
+paraphrase = true
+
+[[q]]
+id = "h2-18"
+q = "was a generative AI assistant ever tried for student questions"
+expect = ["wiki/decisions/2026-06-15-llm-chatbot-rewrite.md"]
+category = "decision"
+paraphrase = true
+
+[[q]]
+id = "h2-19"
+q = "why don't we quietly try a declined card again"
+expect = ["wiki/decisions/2026-04-20-auto-retry-failed-payments.md"]
+category = "decision"
+paraphrase = true
+
+[[q]]
+id = "h2-20"
+q = "status of the idea to have a backup payment processor"
+expect = ["wiki/decisions/2026-09-20-second-payment-provider.md"]
+category = "decision"
+paraphrase = true
+
+[[q]]
+id = "h2-21"
+q = "why do background tasks have no run-time cap"
+expect = ["wiki/decisions/2026-08-12-execution-time-limit-zero.md"]
+category = "decision"
+paraphrase = true
+
+[[q]]
+id = "h2-22"
+q = "ranked list of traps that already cost us time or money"
+expect = ["wiki/gotchas.md"]
+category = "gotcha"
+paraphrase = false
+
+[[q]]
+id = "h2-23"
+q = "what known pitfalls should I watch for before touching the servers"
+expect = ["wiki/gotchas.md"]
+category = "gotcha"
+paraphrase = true
+
+[[q]]
+id = "h2-24"
+q = "which notes have outdated port numbers and an old jumpbox"
+expect = ["wiki/systems/network-ports-2025.md"]
+category = "gotcha"
+paraphrase = true
+
+[[q]]
+id = "h2-25"
+q = "is the stop-services-and-copy backup still how we do it"
+expect = ["wiki/systems/backup-procedure-2025.md"]
+category = "gotcha"
+paraphrase = true
+
+[[q]]
+id = "h2-26"
+q = "where does the code refuse a refund bigger than what was paid"
+expect = ["repo/booking/refunds.py"]
+category = "code"
+paraphrase = true
+
+[[q]]
+id = "h2-27"
+q = "where is the Idempotency-Key attached to card charges"
+expect = ["repo/booking/payments.py"]
+category = "code"
+paraphrase = false
+
+[[q]]
+id = "h2-28"
+q = "which class expires cached prices after ten minutes"
+expect = ["repo/chatbot/prices.py"]
+category = "code"
+paraphrase = true
+
+[[q]]
+id = "h2-29"
+q = "function that rejects a ramp target above the maximum temperature"
+expect = ["repo/scheduler/validator.py"]
+category = "code"
+paraphrase = true
+
+[[q]]
+id = "h2-30"
+q = "glaze stock upsert and lock so two syncs cannot overlap"
+expect = ["repo/jobs/inventory_sync.py"]
+category = "code"
+paraphrase = true
+
+[[q]]
+id = "h2-31"
+q = "convert a UTC class time to studio local text"
+expect = ["repo/booking/reminders.py"]
+category = "code"
+paraphrase = true
+
+[[q]]
+id = "h2-32"
+q = "nightly_backup backup_one prune"
+expect = ["repo/jobs/nightly_backup.py"]
+category = "code"
+paraphrase = false
+
+[[q]]
+id = "h2-33"
+q = "current booking app version"
+expect = ["wiki/facts.md"]
+category = "fact"
+paraphrase = true
+
+[[q]]
+id = "h2-34"
+q = "what port does the student bot listen on"
+expect = ["wiki/facts.md"]
+category = "fact"
+paraphrase = true
+
+[[q]]
+id = "h2-35"
+q = "which port serves the kiln scheduler status API"
+expect = ["wiki/components/kiln-scheduler.md"]
+category = "fact"
+paraphrase = false
+
+[[q]]
+id = "h2-36"
+q = "how many days are database backups kept"
+expect = ["wiki/systems/backup-system.md"]
+category = "fact"
+paraphrase = true
+
+[[q]]
+id = "h2-37"
+q = "who has to say yes before anything goes live on the servers"
+expect = ["wiki/rules.md"]
+category = "rules"
+paraphrase = true
+
+[[q]]
+id = "h2-38"
+q = "standing rules about secrets and deleting production rows"
+expect = ["wiki/rules.md"]
+category = "rules"
+paraphrase = false
+
+[[q]]
+id = "h2-39"
+q = "which courier did we try for shipping glazed pieces"
+expect = ["legacy/notes.md"]
+category = "legacy"
+paraphrase = true
+
+[[q]]
+id = "h2-40"
+q = "how much did k1 read low against the handheld probe"
+expect = ["legacy/notes.md"]
+category = "legacy"
+paraphrase = true
