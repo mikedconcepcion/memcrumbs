@@ -150,6 +150,9 @@ class Store:
     def known(self, source):
         return dict(self.db.execute("SELECT path, stamp FROM files WHERE source=?", (source,)))
 
+    def by_source(self):
+        return dict(self.db.execute("SELECT source, count(*) FROM files GROUP BY source"))
+
     def replace(self, path, source, stamp, docs, syms):
         """Each file owns the doc rowids [id << ROWID_BITS, (id + 1) << ROWID_BITS): a file's docs are deleted by
         rowid range (an FTS5 `WHERE path=` would scan the whole table, making a full index quadratic)."""

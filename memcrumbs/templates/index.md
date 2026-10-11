@@ -7,9 +7,7 @@ tags: [index]
 # {title}
 
 ## Map
-- What it is: …
-- Where things live: …
-- Start here: [[gotchas]]
+{map}
 
 ## Pages
 - systems/ · runbooks/ · components/ · research/ · decisions/ · journal/

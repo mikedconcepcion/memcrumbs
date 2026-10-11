@@ -18,6 +18,8 @@ calls and runs no background service; it uses the network only to update itself 
 - `suggest`: offers (merges, missing pages, permission prompts for gotchas, skills), applied only on the user's yes,
   each undoable byte for byte.
 - `check` and `scan`: wiki lint, and a secret scan of a folder, sdist or wheel.
+- `init`: sets up the repository you are in with one command: names the project, drafts the map from the repo,
+  indexes, wires Claude Code after one yes, runs `doctor`. Run again, it repairs; `init --remove` undoes it.
 - `wire`: connects a repository to Claude Code (CLAUDE.md block, session-start hook, skill) or to agents that read
   AGENTS.md.
 
@@ -29,6 +31,7 @@ calls and runs no background service; it uses the network only to update itself 
 
 ## Install
 pip install memcrumbs
+cd <your repo> && memcrumbs init
 
 ## Upgrade
 memcrumbs update

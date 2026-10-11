@@ -101,6 +101,56 @@ class Command(ProjectCase):
         self.assertFalse(any("wire" in c for c in calls))
 
 
+class Finish(ProjectCase):
+    """An upgrade made by hand (pip, git) has not run index and wire: `update` runs them once."""
+
+    def wired_by(self, version):
+        p = proj.resolve("t")
+        with mock.patch("sys.stdout", new=io.StringIO()):
+            o = Out("wire", p)
+            wire.wire(o, p, self.repo, apply=True, allow=True)
+            o.close()
+        record = p.data / "wire.json"
+        data = json.loads(record.read_text(encoding="utf-8"))
+        data.pop("version")
+        record.write_text(json.dumps(dict(data, **({"version": version} if version else {}))), encoding="utf-8")
+
+    def update(self, argv=("update",), offline=False):
+        calls = []
+        net = mock.patch.object(urllib.request, "urlopen", side_effect=OSError("offline")) if offline else \
+            pypi(update.__version__)
+        with net, mock.patch.object(update.subprocess, "run", side_effect=recorder(calls)):
+            code, out = run(list(argv))
+        return code, out, [c[3:] for c in calls]
+
+    def test_a_hand_upgrade_is_finished_once(self):
+        self.wired_by(None)                                     # 0.2.0 wired it and kept no version
+        self.assertIn("run memcrumbs update to finish (index, wire)", run(["-p", "t", "status"])[1])
+        self.assertIn("the wiring is from an earlier version", run(["-p", "t", "doctor"])[1])
+        _, out, calls = self.update(["update", "--check"])
+        self.assertIn("is not finished (index, wire): memcrumbs update", out)
+        self.assertEqual(calls, [])                             # --check only says so
+        code, out, calls = self.update()
+        self.assertEqual(code, 0, out)
+        self.assertIn("finishing the upgrade to %s" % update.__version__, out)
+        self.assertIn(["-p", "t", "index"], calls)
+        self.assertEqual([c[2] for c in calls if len(c) > 2 and c[2] == "wire"], ["wire"])
+        self.wired_by(update.__version__)                       # what that new wire run records
+        _, out, calls = self.update()
+        self.assertEqual(calls, [])                             # nothing left: nothing runs
+        self.assertNotIn("to finish", run(["-p", "t", "status"])[1])
+
+    def test_offline_still_finishes(self):
+        self.wired_by("0.2.0")
+        code, out, calls = self.update(offline=True)
+        self.assertEqual(code, 1)                               # PyPI was not reached: said
+        self.assertIn(["-p", "t", "index"], calls)              # but the local steps ran
+
+    def test_a_newer_record_is_not_a_downgrade_to_finish(self):
+        self.wired_by("99.0.0")
+        self.assertIsNone(update.unfinished(proj.resolve("t"), thorough=True))
+
+
 class Notice(ProjectCase):
     def opt_in(self):
         cfg = self.projects / "t" / "memcrumbs.toml"

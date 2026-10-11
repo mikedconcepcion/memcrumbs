@@ -9,7 +9,11 @@ memcrumbs makes no network calls of its own, with two exceptions the user choose
 An upgrade uses the tool that installed memcrumbs (pip, pipx or uv). Then, in a new process that runs the new code,
 it re-indexes each project and refreshes, in each repo, the CLAUDE.md or AGENTS.md block, the skill and the allow
 rules that `wire` installed there (only those; `--no-wire` skips it, and `wire --remove` still undoes it byte for
-byte). An editable install or a development build is never upgraded."""
+byte). An editable install or a development build is never upgraded.
+
+After an upgrade made by hand (`pip install --upgrade memcrumbs`, or `git pull` in a checkout), `memcrumbs update`
+runs those same steps once: `wire` records the version that applied the wiring, and an older record means the
+steps are still due. The header and `doctor` say so until they have run."""
 import json
 import os
 import re
@@ -100,11 +104,29 @@ def maybe_check(project):
 
 
 def header_line(project):
-    """One line while a newer release is known (from the stored check; nothing is fetched here)."""
+    """One line while a newer release is known (from the stored check; nothing is fetched here), or while an upgrade
+    made by hand still has its steps to run."""
+    done = unfinished(project)
+    if done:
+        return "memcrumbs was upgraded to %s; the wiring is from %s: run memcrumbs update to finish (index, wire)" % (
+            __version__, done)
     if not notify_on(project):
         return ""
     latest = _stored(project).get("latest")
     return "memcrumbs %s is available (you have %s): memcrumbs update" % (latest, __version__) if newer(latest) else ""
+
+
+def unfinished(project, thorough=False):
+    """The version that last applied this project's wiring, when it is older than this one: an upgrade made by hand
+    (pip, git) whose index and wire steps have not run. None when there is nothing to finish. The quick form reads
+    one small file (the header uses it); `thorough` also looks in the repos for wiring the record does not list."""
+    from memcrumbs.wire import _state
+    st, _ = _state(project)
+    if not st or not newer(__version__, st.get("version") or "0.0.0"):
+        return None
+    if st.get("created") or st.get("allow") or (thorough and wired(project)):
+        return st.get("version") or "an earlier version"
+    return None
 
 
 # ---- after the upgrade: the steps an upgrade needs
@@ -166,18 +188,34 @@ def after_upgrade(out, projects, rewire=True):
             out("  %s: wire %s · %s" % (project.name, repo.name, tail if code == 0 else "FAILED: " + tail))
 
 
+def finish(out, projects, args):
+    """Run the after-upgrade steps where an upgrade made by hand left them undone. Needs no network."""
+    todo = [p for p in projects if unfinished(p, thorough=True)]
+    out.set(finished=[p.name for p in todo])
+    if todo:
+        out("finishing the upgrade to %s: index and wire in %s" % (__version__, ", ".join(p.name for p in todo)))
+        after_upgrade(out, todo, rewire=not args.no_wire)
+    return todo
+
+
 def command(out, args, projects):
     try:
         latest = latest_release()
     except (OSError, ValueError) as e:
+        if not args.check:
+            finish(out, projects, args)
         raise SystemExit("memcrumbs: could not reach PyPI (%s); try again later, or upgrade by hand: "
-                         "pip install --upgrade memcrumbs" % type(e).__name__)
+                         "pip install --upgrade memcrumbs, then memcrumbs update" % type(e).__name__)
     how, cmd = installer()
     out.set(current=__version__, latest=latest, newer=newer(latest), installer=how)
     if not newer(latest):
         dev = parse(__version__) and parse(__version__)[3] < 4
         out("memcrumbs %s is %s (newest release: %s)" % (__version__, "a development build" if dev else "up to date",
                                                         latest))
+        if not args.check:
+            finish(out, projects, args)
+        elif any(unfinished(p, thorough=True) for p in projects):
+            out("the upgrade to %s is not finished (index, wire): memcrumbs update" % __version__)
         return 0
     out("memcrumbs %s is available (you have %s). What changed: %s" % (latest, __version__, CHANGELOG))
     if args.check:
@@ -185,7 +223,7 @@ def command(out, args, projects):
         return 0
     if cmd is None:
         raise SystemExit("memcrumbs: this memcrumbs runs from a %s; upgrade it with git, then run "
-                         "memcrumbs index and memcrumbs wire --apply in each project" % how)
+                         "memcrumbs update to finish (index, wire)" % how)
     out("upgrading with %s …" % how)
     r = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=900)
     if r.returncode:

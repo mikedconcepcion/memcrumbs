@@ -251,7 +251,8 @@ def _main(argv):
         out = Out(c, project, json_mode=args.json, full=args.full)
         try:
             if c == "init":
-                cmd_setup.init(out, args.name, args.repo, args.title)
+                from memcrumbs import setup_repo
+                return setup_repo.init(out, args)
             elif c == "template":
                 cmd_setup.template(out)
             elif c == "update":

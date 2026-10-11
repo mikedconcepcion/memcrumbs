@@ -31,6 +31,22 @@ def _fresh(project):
         return None
 
 
+def _unloaded(api, store, force, stats, pending, claimed):
+    """Files indexed by a source that nothing provides now. While a listed plugin fails to load they are kept, so a
+    broken plugin never empties the index without a word; once every plugin loads, the source was taken out of the
+    config and its files leave. Either way the refresh names the count."""
+    for src, n in sorted(store.by_source().items()):
+        if src in api.sources:
+            continue
+        if api.errors and not force:
+            stats[src] = "%d files kept from the last index: a plugin did not load (memcrumbs doctor)" % n
+            continue
+        if not force:                                     # --full starts from empty tables anyway
+            pending.extend(("drop", src, key, None, None) for key in sorted(store.known(src)) if key not in claimed)
+        stats[src] = "%d files left the index: %s" % (n, "a plugin did not load (memcrumbs doctor)" if api.errors
+                                                       else "no source provides them now")
+
+
 def refresh(project, api, store, only=None, force=False, throttle=60, wait=0.25):
     """The wiki is checked on every call; other sources at most every `throttle` seconds unless forced."""
     now = time.time()
@@ -60,6 +76,8 @@ def refresh(project, api, store, only=None, force=False, throttle=60, wait=0.25)
                 pending.append(("drop", name, gone, None, None))
             n += 1
         stats[name] = n
+    if due and not only:
+        _unloaded(api, store, force, stats, pending, claimed)
     try:
         if force and not only and pending:               # `index --full` rebuilds from empty tables
             with store.writer(wait):

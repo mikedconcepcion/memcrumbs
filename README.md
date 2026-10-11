@@ -66,7 +66,8 @@ pip install memcrumbs            # Python 3.11+; puts `memcrumbs` on PATH (pipx 
 ```
 
 To upgrade later, run `memcrumbs update`: it installs the newest release the same way memcrumbs was installed,
-re-indexes your projects and refreshes the agent setup `wire` put in your repos. Add `[update] notify = true` to a
+re-indexes your projects and refreshes the agent setup in your repos. After an upgrade by hand
+(`pip install --upgrade memcrumbs`), run `memcrumbs update` once to finish it. Add `[update] notify = true` to a
 project's config to get a one-line notice in the session header when a new release is out.
 
 Your wikis live outside the package, in `~/.memcrumbs/projects` by default. To keep them somewhere else (for
@@ -76,14 +77,19 @@ environment variable.
 ## Quick start
 
 ```bash
-memcrumbs init myapp --repo /code/myapp --title "My App"   # creates the project and a starter wiki
-memcrumbs -p myapp index                                   # builds the index (seconds; incremental afterwards)
-memcrumbs -p myapp wire --repo /code/myapp --apply --allow # CLAUDE.md block, session header hook, skill
-memcrumbs -p myapp doctor                                  # checks the install, the index and the hook
+pip install memcrumbs
+cd /code/myapp && memcrumbs init
 ```
 
+`init` names the project after the repo, writes a starter wiki with a map drafted from the repo (README,
+languages, folders, tests, CI), indexes the code and the repo's markdown, and checks the result. It asks once
+before it wires Claude Code (a CLAUDE.md block, a session-start hook, read-only allow rules and a skill).
+Running it again repairs and upgrades; `memcrumbs init --remove` takes the wiring out again, byte for byte.
+
 From then on, every Claude Code session in that repo starts with the header, and the agent looks things up with
-`memcrumbs find`. Inside the repo (or the project folder) `-p` can be left out. Write the wiki as you go:
+`memcrumbs find`. In the first session the agent drafts your rules and gotchas from CLAUDE.md, the README and the
+code; they reach the header once you approve them with `memcrumbs review`. Inside the repo (or the project
+folder) `-p` can be left out. Write the wiki as you go:
 
 ```bash
 memcrumbs log "rotated the API key" --tag ops                        # a dated journal line
@@ -92,8 +98,8 @@ memcrumbs incident "Nightly task died after 72 h" --symptom "no reports since Tu
 memcrumbs check                                                      # lint: secrets, links, stale pages, …
 ```
 
-`wire --remove --apply` takes everything out again, byte for byte. A step-by-step setup that your agent can
-follow is in [docs/adopting.md](https://github.com/mikedconcepcion/memcrumbs/blob/main/docs/adopting.md).
+To do each step yourself (or have your agent follow them), see the step-by-step setup in
+[docs/adopting.md](https://github.com/mikedconcepcion/memcrumbs/blob/main/docs/adopting.md).
 
 ## Everyday commands
 

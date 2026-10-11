@@ -6,6 +6,22 @@ the machine or the project's agent setup: an agent should get explicit approval 
 Your wiki, config, plugins and question set are yours. They live in your projects folder
 (`~/.memcrumbs/projects` by default), never in the memcrumbs package.
 
+## The short way (ask the owner)
+
+```
+pip install memcrumbs
+cd <your repo> && memcrumbs init
+```
+
+`init` does steps 2 to 5 below in one run. It names the project after the repo, writes the starter wiki with a map
+drafted from the repo, configures what to index (the code, the repo's own markdown, minus generated folders such
+as a virtual environment), indexes, wires Claude Code after one yes, and runs `doctor`. Under an agent there is
+no terminal to answer, so `init` stops before wiring and lists what it would change; after the owner's yes, run
+`memcrumbs init --yes`. Running `init` again repairs and upgrades. `memcrumbs init --remove` takes the wiring out
+byte for byte and keeps the wiki (`--delete-wiki` deletes it too).
+
+The steps below do the same by hand, for when you want each one in your hands.
+
 ## 1. Install (ask the owner)
 
 ```
@@ -98,8 +114,12 @@ memcrumbs -p <project> doctor
 ```
 
 `memcrumbs update --check` only says whether a newer release exists. To be told without asking, set
-`[update] notify = true` in `memcrumbs.toml`: the session header then shows one line when a release is out. By
-hand, the same upgrade is `pip install --upgrade memcrumbs`, then `index` and `wire --apply --allow` per project.
+`[update] notify = true` in `memcrumbs.toml`: the session header then shows one line when a release is out.
+
+By hand, upgrade with `pip install --upgrade memcrumbs` (0.2.0 has no `update` command, so this is the way up
+from it), then run `memcrumbs update` once: it finishes the upgrade by re-indexing and refreshing the wiring in
+each project, and a second run changes nothing. Until then the session header and `doctor` say the upgrade is
+not finished. Running `memcrumbs init` in the repo does the same for one project.
 
 The wiki is plain markdown and an upgrade never rewrites it. To roll back, run
 `memcrumbs -p <project> wire --remove --apply` and reinstall the previous version.

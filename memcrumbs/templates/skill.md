@@ -47,6 +47,13 @@ already working on are fine; sweeping refreshes are not.
 a step is done. Never log "done" or "fixed" without the check that proved it. After a compaction or in a new
 session, read the last journal lines (`memcrumbs status`) before going on.
 
+**First run (the header says "new wiki").** Draft the starter lines from what the repo already says, then stop:
+- read CLAUDE.md, the README and CONTRIBUTING, and skim the layout (`memcrumbs outline <folder>`);
+- write up to 8 rules in `rules.md` `## Top` (what needs the owner's approval, what is never done) and up to 8
+  gotchas in `gotchas.md` `## Top`, one line each, only what those files support: never invent a rule;
+- fill `What it is` in `index.md` `## Map` if it shows `…`;
+- tell the owner the lines wait for their review: `memcrumbs review` lists them and how to approve.
+
 **Writing the wiki** (pages are markdown under the project's `wiki/`):
 - One topic per page, under 300 lines, frontmatter `title / summary / verified / tags / sources` (+ `status`, `aliases`).
 - `verified:` = the date you checked the facts against the live system or code — `memcrumbs verify <page>` when you re-check.

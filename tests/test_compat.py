@@ -2,6 +2,7 @@
 import contextlib
 import io
 import json
+import sqlite3
 import subprocess
 from pathlib import Path
 from unittest import mock
@@ -37,8 +38,7 @@ def v01_skill():
                                capture_output=True, check=True).stdout
     except (OSError, subprocess.CalledProcessError, IndexError):
         return None
-    import hashlib                                         # only a skill an old version really wrote counts
-    return skill if "sha256:" + hashlib.sha256(skill).hexdigest() in wire.OLD_SKILLS else None
+    return skill if wire.skill_hash(skill) in wire.OLD_SKILLS else None    # only a skill an old version wrote counts
 
 
 class V01Upgrade(ProjectCase):
@@ -53,6 +53,39 @@ class V01Upgrade(ProjectCase):
         run(["-p", "t", "index"])
         self.assertIn("quokka", run(["-p", "t", "find", "quokka"])[1])
         self.assertIn("lint findings:", run(["-p", "t", "status"])[1])
+
+    def test_a_plugin_that_stops_loading_is_named_and_its_files_kept_until_it_leaves_the_config(self):
+        pdir = self.projects / "t"
+        (pdir / "notes").mkdir()
+        (pdir / "notes" / "a.txt").write_text("the quokka migration note\n", encoding="utf-8")
+        (pdir / "plugins").mkdir()
+        (pdir / "plugins" / "old.py").write_text(V01_PLUGIN, encoding="utf-8")
+        cfg = pdir / "memcrumbs.toml"
+
+        def config(plugins_toml):
+            cfg.write_text('name = "t"\nrepos = ["../../repo"]\nplugins = [%s]\n' % plugins_toml, encoding="utf-8")
+
+        def index():                                     # an explicit index, past the 60 s throttle
+            db = sqlite3.connect(proj.resolve("t").index_path)
+            with db:
+                db.execute("UPDATE meta SET v = '0' WHERE k = 'refreshed'")
+            db.close()
+            return run(["-p", "t", "index"])[1]
+        config('"plugins/old.py"')
+        run(["-p", "t", "index"])
+        self.assertIn("quokka", run(["-p", "t", "find", "quokka"])[1])
+        (pdir / "plugins" / "old.py").unlink()            # an upgrade that no longer ships the plugin
+        self.assertIn("notes 1 files kept from the last index: a plugin did not load (memcrumbs doctor)", index())
+        self.assertIn("quokka", run(["-p", "t", "find", "quokka"])[1])
+        self.assertIn("Fix or remove %s" % (pdir / "plugins" / "old.py").resolve().as_posix(),
+                      run(["-p", "t", "doctor"])[1])
+        config('"gonepack"')
+        self.assertIn("copy its module to %s" % (pdir / "plugins" / "gonepack.py").resolve().as_posix(),
+                      run(["-p", "t", "doctor"])[1])
+        config("")                                       # taken out of the config: its files leave, said once
+        self.assertIn("notes 1 files left the index: no source provides them now", index())
+        self.assertIn("no hits", run(["-p", "t", "find", "quokka"])[1])
+        self.assertNotIn("notes", index())
 
     def test_v01_wiring_is_upgraded_and_removed(self):
         skill = v01_skill()
@@ -78,7 +111,7 @@ class V01Upgrade(ProjectCase):
                 wire.wire(out, p, self.repo, apply=True, user_skill=True, **kw)
                 out.close()
         go()
-        self.assertEqual(user_skill.read_bytes(), (ROOT / "memcrumbs" / "templates" / "skill.md").read_bytes())
+        self.assertEqual(user_skill.read_bytes(), wire.lf((ROOT / "memcrumbs" / "templates" / "skill.md").read_bytes()))
         self.assertNotIn(b"old block", (self.repo / "CLAUDE.md").read_bytes())
         self.assertEqual(sp.read_bytes().count(b"memcrumbs -p t status"), 1)            # not added twice
         go(remove=True)

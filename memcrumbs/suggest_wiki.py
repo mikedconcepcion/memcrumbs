@@ -107,14 +107,19 @@ def _split(project, cheap_only=False):
         lines = split_lines(body)
         if p.stem.lower() in HEADER_PAGES or (len(lines) <= max_lines and len(body) <= SPLIT_CHARS):
             continue
-        hs = [(i, h) for i, lvl, h in markdown.headings(lines) if lvl == 2]
+        heads = markdown.headings(lines)
+        hs = [(i, h) for i, lvl, h in heads if lvl == 2]
+        if len(hs) < 2:
+            hs = [(i, h) for i, lvl, h in heads if lvl == 3]
+        if len(hs) < 2:                  # nothing to split by: one long table or list, which lookups return by rows
+            continue
         sizes = [(h, (hs[k + 1][0] if k + 1 < len(hs) else len(lines)) - i) for k, (i, h) in enumerate(hs)]
         big = ", ".join("%s (%d lines)" % (h, n) for h, n in sorted(sizes, key=lambda x: -x[1])[:3])
         out.append(Suggestion(
             "split", project.rel(p), "%s is %d lines, ≈ %d tokens: too big for one lookup" % (
                 project.rel(p), len(lines), len(body) // 4),
             "split it by its sections into pages, and keep this page as a short index that links them",
-            ["%d lines, %d characters; largest sections: %s" % (len(lines), len(body), big or "none")],
+            ["%d lines, %d characters; largest sections: %s" % (len(lines), len(body), big)],
             agent="move each large section to its own page (keep `sources:` and aliases with the facts), leave a "
                   "one-line summary and a [[link]] here, then memcrumbs check", score=len(body) / 1000))
     return out

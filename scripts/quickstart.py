@@ -31,11 +31,10 @@ def main():
         env = dict(os.environ, MEMCRUMBS_PROJECTS=str(home / "projects"), HOME=str(home), USERPROFILE=str(home))
         env.pop("MEMCRUMBS_PROJECT", None)
         exe = exe or sys.exit("memcrumbs is not on PATH: pip install . first, or use --venv")
-        steps = [  # the README quick start, verbatim apart from paths (inside the repo, -p is not needed)
-            (["init", "myapp", "--repo", str(repo), "--title", "My App"], "created"),
-            (["-p", "myapp", "index"], "files"),
-            (["-p", "myapp", "wire", "--repo", str(repo), "--apply", "--allow"], "applied"),
-            (["-p", "myapp", "doctor"], "checks"),
+        subprocess.run(["git", "-C", str(repo), "init", "-q"], check=True)          # a repo, as yours is
+        steps = [  # the README quick start, run inside the repo; --yes is the one keypress `init` asks for
+            (["init", "--yes"], "created myapp"),
+            (["doctor"], "0 fail"),
             (["log", "rotated the API key", "--tag", "ops"], "logged"),
             (["decision", "Move bookings to Postgres", "--status", "rejected", "--why", "too much to run for our size"],
              "wrote"),
@@ -44,9 +43,9 @@ def main():
             (["check"], "findings"),
             (["find", "load config"], "app.py"),            # what the agent then does
             (["outline", str(repo / "app.py")], "def load_config"),
-            (["status"], "memcrumbs · My App"),
+            (["status"], "memcrumbs · "),
             (["scan", str(repo)], "0 secret-like hits"),
-            (["-p", "myapp", "wire", "--repo", str(repo), "--remove", "--apply"], "applied"),
+            (["init", "--remove"], "unwired"),
         ]
         for argv, expect in steps:
             r = subprocess.run([exe] + argv, env=env, cwd=str(repo), capture_output=True, text=True, encoding="utf-8")

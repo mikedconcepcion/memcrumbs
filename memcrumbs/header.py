@@ -27,6 +27,16 @@ LOOKUP = ('Look up before reading files: memcrumbs find "<words>" · page <name>
           'sym <name> · log "<note>"  (skill: memcrumbs)')
 
 
+NEW_WIKI = ("new wiki: rules and gotchas are empty. First run (skill memcrumbs): draft them from CLAUDE.md, the README "
+            "and the code for the owner's review")
+
+
+def _new_wiki(project):
+    """rules.md and gotchas.md exist (init wrote them) and hold no line yet, reviewed or not."""
+    from memcrumbs import review
+    return all((project.wiki / f).exists() for f in ("rules.md", "gotchas.md")) and not review.standing(project)
+
+
 def _file_section(project, fname, heading, n, name=""):
     path = project.wiki / fname
     if not path.exists():
@@ -168,6 +178,9 @@ def status(out, project, api, counts=None, stale=None, unreviewed=0):
         head.append("waiting for the owner's review: %s — memcrumbs review" % ", ".join(x for x in (
             "%d new rule/gotcha line%s" % (waiting, "s" if waiting != 1 else "") if waiting else "",
             "%d agent-written page%s" % (unreviewed, "s" if unreviewed != 1 else "") if unreviewed else "") if x))
+    elif _new_wiki(project):
+        head.append(NEW_WIKI)
+    secs = [s for s in secs if s["lines"] or s["more"]]      # an empty section prints no bare title
     from memcrumbs import suggest
     nudge = suggest.header_line(project, api)              # one line, only when something is new
     if nudge:

@@ -13,18 +13,17 @@ import hashlib
 import json
 from pathlib import Path
 
-from memcrumbs import claude_settings as cs, markdown, writeset
+from memcrumbs import __version__, claude_settings as cs, markdown, writeset
 from memcrumbs.jsonedit import JsonEditError, check_object
 from memcrumbs.util import posix, read_doc
 
 TPL = Path(__file__).parent / "templates"
-# sha256 of skills earlier memcrumbs versions wrote (LF and CRLF): those are ours to update or remove
-OLD_SKILLS = {"sha256:833110da09379bbaf379f3964563cc7d5253feff2b1bb1fad9dc2b71a62c3485",     # 0.1.0, LF
-              "sha256:2ad1ecd17104cc14d9e21e17d02098b7007597be99ea9ee60bf15166c6e0b5dd",     # 0.1.0, CRLF
-              "sha256:47cec81a2c823e16a4c470adf512728e4dc87be454ff0c3f5e3c3c9bd5a16632",     # 0.2.0.dev0, LF
-              "sha256:0c3134d948efa7f6505c3c459a1787bfaa39aee2858affa4c039b85014e098ea",     # 0.2.0.dev0, CRLF
-              "sha256:ed5ac17c5edfe1dec670ee72f62200a2ed682b1266b0b2556fb84a623e1338cd",     # 0.2.0.dev1-dev3, LF
-              "sha256:bf51a435275f732e6727a9461136e70342e75452910f73a21669a9c8f2396784"}     # 0.2.0.dev1-dev3, CRLF
+# sha256 of the skills earlier memcrumbs versions wrote, over the text with LF line endings: those are ours to
+# update or remove. Line endings never count: git's autocrlf rewrites them on every Windows checkout.
+OLD_SKILLS = {"sha256:833110da09379bbaf379f3964563cc7d5253feff2b1bb1fad9dc2b71a62c3485",     # 0.1.0
+              "sha256:47cec81a2c823e16a4c470adf512728e4dc87be454ff0c3f5e3c3c9bd5a16632",     # 0.2.0.dev0
+              "sha256:ed5ac17c5edfe1dec670ee72f62200a2ed682b1266b0b2556fb84a623e1338cd",     # 0.2.0.dev1-dev5
+              "sha256:e5b8c3db45712581e73218b350bdc96fa2c368103759356be9e64ac1bdd88fb5"}     # 0.2.0.dev6-0.3.0
 BLOCKS = {"claude": ("CLAUDE.md", "claude", "claude_block.md"), "agents": ("AGENTS.md", "agents", "agents_block.md")}
 hook_command = cs.hook_command                       # kept importable from here
 
@@ -102,17 +101,28 @@ def _settings(project, path, remove, allow, inserted_allow):
     return _change(path, new, info, "; ".join(what), empty=remove and new.strip() == "{}", allow=added)
 
 
+def lf(data):
+    return data.replace(b"\r\n", b"\n")
+
+
+def skill_hash(data):
+    return "sha256:" + hashlib.sha256(lf(data)).hexdigest()
+
+
 def _skill(path, remove):
-    ours = (TPL / "skill.md").read_bytes()
+    ours = lf((TPL / "skill.md").read_bytes())
     have = path.read_bytes() if path.exists() else None
-    older = have is not None and "sha256:" + hashlib.sha256(have).hexdigest() in OLD_SKILLS
+    same = have is not None and lf(have) == ours                 # the same text, whatever its line endings
+    older = have is not None and skill_hash(have) in OLD_SKILLS
     if remove:
-        return _change(path, None, None, "remove skill") if have == ours or older else None
+        return _change(path, None, None, "remove skill") if same or older else None
     if have is None:
         return _change(path, ours, None, "write skill")
+    if same:
+        return None
     if older:
         return _change(path, ours, None, "update skill (an older memcrumbs version)")
-    return None if have == ours else _change(path, False, None, "skill differs from this version (kept)")
+    return _change(path, False, None, "skill differs from this version (kept)")
 
 
 def plan(project, repo, targets=("claude",), remove=False, user_skill=False, allow=False, state=None):
@@ -148,16 +158,18 @@ def wire(out, project, repo=None, targets=("claude",), apply=False, remove=False
     state, state_path = _state(project)
     changes = plan(project, repo.resolve(), targets, remove, user_skill, allow, state)
     out.set(repo=posix(repo), apply=apply, remove=remove, changes=[dict(path=posix(c["path"]), what=c["what"]) for c in changes])
+    created = set((state or {}).get("created", []))
+    inserted = dict((state or {}).get("allow") or {})
     if not changes:
         out("nothing to %s in %s" % ("remove" if remove else "change", posix(repo)))
-        return
     for c in changes:
         out("%s: %s" % (posix(c["path"]), c["what"]))
     if not apply or all(c["new"] is False for c in changes):
-        out("(dry run — add --apply)" if not apply else "nothing to apply.")
+        if changes:
+            out("(dry run — add --apply)" if not apply else "nothing to apply.")
+        if apply and state is not None and state.get("version") != __version__:
+            _record(project, state_path, created, inserted)          # this version has checked the wiring
         return
-    created = set((state or {}).get("created", []))
-    inserted = dict((state or {}).get("allow") or {})
     extra = [c["path"] for c in changes]
     try:
         for c in changes:                            # the record changes only after each write succeeds
@@ -186,6 +198,12 @@ def wire(out, project, repo=None, targets=("claude",), apply=False, remove=False
             elif remove:
                 inserted.pop(key, None)
     finally:                                         # a failed write still leaves a record of what was done
-        writeset.write_text(project, state_path, json.dumps({"created": sorted(created), "allow": inserted},
-                                                            indent=1) + "\n")
+        _record(project, state_path, created, inserted)
     out("applied.")
+
+
+def _record(project, state_path, created, inserted):
+    """`version` is the memcrumbs that last applied the wiring: `update` and the header use it to tell whether an
+    upgrade made by hand (pip, git) still has its index and wiring steps to run."""
+    writeset.write_text(project, state_path, json.dumps({"created": sorted(created), "allow": inserted,
+                                                         "version": __version__}, indent=1) + "\n")

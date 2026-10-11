@@ -112,6 +112,28 @@ class WireRoundTrip(unittest.TestCase):
         with self.assertRaises(SystemExit):
             self.run_wire(repo, remove=True)
 
+    def test_line_endings_never_make_a_skill_foreign(self):
+        """git's autocrlf rewrites the skill on every Windows checkout: the same text is still ours."""
+        repo = self.root / "crlf"
+        skill = repo / ".claude" / "skills" / "memcrumbs" / "SKILL.md"
+        skill.parent.mkdir(parents=True)
+        ours = wire.lf((wire.TPL / "skill.md").read_bytes())
+        skill.write_bytes(ours.replace(b"\n", b"\r\n"))
+
+        def skill_change():
+            return [c["what"] for c in wire.plan(self.project, repo) if c["path"].name == "SKILL.md"]
+        self.assertEqual(skill_change(), [])                                    # nothing to do
+        with mock.patch.object(wire, "OLD_SKILLS", {wire.skill_hash(b"an older skill\n")}):
+            skill.write_bytes(b"an older skill\r\n")                            # an older version's text, CRLF
+            self.assertEqual(skill_change(), ["update skill (an older memcrumbs version)"])
+            self.run_wire(repo)
+            self.assertEqual(skill.read_bytes(), ours)
+        skill.write_bytes(ours.replace(b"\n", b"\r\n"))
+        self.run_wire(repo, remove=True)                                        # still ours to remove
+        self.assertFalse(skill.exists())
+        state = json.loads((self.project.data / "wire.json").read_text(encoding="utf-8"))
+        self.assertEqual(state["version"], wire.__version__)                    # who applied the wiring last
+
     def test_user_skill_kept_unless_asked(self):
         repo = self.root / "userskill"
         repo.mkdir()

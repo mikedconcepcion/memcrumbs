@@ -29,7 +29,7 @@
  "downloadUrl": "https://pypi.org/project/memcrumbs/",
  "applicationCategory": "DeveloperApplication",
  "operatingSystem": "Windows, macOS, Linux",
- "softwareVersion": "0.3.0",
+ "softwareVersion": "0.4.0",
  "license": "https://www.apache.org/licenses/LICENSE-2.0",
  "programmingLanguage": "Python",
  "softwareRequirements": "Python 3.11 or newer",
@@ -452,12 +452,10 @@ EmberOps.psm1 — cited by 1 decision (ACCEPTED), 2 incidents, 1 runbook</pre>
 
     <section id="start" aria-labelledby="start-h">
       <div class="sec-head"><h2 id="start-h">Quick start</h2></div>
-      <p class="intro">Four commands from install to a wired repository. Later, <code>memcrumbs update</code> keeps it current. The setup guide covers the rest, step by step.</p>
+      <p class="intro">Two commands from install to a wired repository. <code>init</code> names the project after the repo, drafts the map from it, indexes the code and the repo's markdown, asks once before it wires Claude Code, and runs a health check. Later, <code>memcrumbs update</code> keeps it current. The setup guide covers each step by hand.</p>
       <figure class="term"><pre><span class="p">$</span> pip install memcrumbs
-<span class="p">$</span> memcrumbs init myapp --repo /code/myapp --title "My App"
-<span class="p">$</span> memcrumbs -p myapp index
-<span class="p">$</span> memcrumbs -p myapp wire --repo /code/myapp --apply --allow
-<span class="d"># CLAUDE.md block, session header hook and skill; undo with wire --remove --apply</span></pre></figure>
+<span class="p">$</span> cd /code/myapp &amp;&amp; memcrumbs init
+<span class="d"># CLAUDE.md block, session header hook and skill; undo with init --remove</span></pre></figure>
     </section>
 
     <section id="faq" class="faq" aria-labelledby="faq-h">
@@ -495,7 +493,7 @@ EmberOps.psm1 — cited by 1 decision (ACCEPTED), 2 incidents, 1 runbook</pre>
       <a href="https://github.com/mikedconcepcion/memcrumbs/blob/main/SECURITY.md">Security</a>
       <a href="https://github.com/mikedconcepcion/memcrumbs/issues/new/choose">Report a bug</a>
     </nav>
-    <span class="right">Version 0.3.0 · alpha</span>
+    <span class="right">Version 0.4.0 · alpha</span>
   </footer>
 </div>
 

@@ -18,7 +18,7 @@ from pathlib import Path
 from memcrumbs import __version__, claude_settings, header, plan, synonyms, usage
 from memcrumbs.lint import DEPRECATED
 from memcrumbs.store import SCHEMA_VERSION, IndexBroken, Locked, Store
-from memcrumbs.util import read_text
+from memcrumbs.util import posix, read_text
 
 SCHEMA = {"": {"name", "title", "wiki", "repos", "plugins", "code", "docs", "security", "search", "check", "status",
                "facts", "suggest", "review", "update"},
@@ -227,6 +227,10 @@ def _use(project):
 
 def _update(project):
     from memcrumbs import update
+    done = update.unfinished(project)
+    if done:
+        yield "warn", "update", "memcrumbs was upgraded to %s; the wiring is from %s: memcrumbs update finishes it " \
+            "(index, wire)" % (__version__, done), dict(upgrade_unfinished=True)
     if not update.notify_on(project):
         return
     latest = update._stored(project).get("latest")
@@ -245,9 +249,20 @@ def _plan(project):
         dict(plan_items=len(items), plan_tokens=sum(c["tokens"] for c in items)))
 
 
+def _plugin_fix(project, spec):
+    """The fix for a plugin that did not load. Until it loads, its documents are not refreshed (`index` says so)."""
+    if spec.endswith(".py"):
+        return "Fix or remove %s, or take it out of `plugins` in memcrumbs.toml" % posix(project.dir / spec)
+    name = spec.rsplit(".", 1)[-1]
+    return ("If that pack or module is no longer installed, keep it as a project plugin: copy its module to %s and "
+            'list "plugins/%s.py" in `plugins`; or take it out of `plugins`' % (posix(project.dir / "plugins" /
+                                                                                     (name + ".py")), name))
+
+
 def run(out, project, api, share=False):
     checks = list(_environment()) + list(_config(project))
-    checks += [("fail", "plugin", "%s failed to load: %s" % e, dict(plugin_ok=False)) for e in api.errors]
+    checks += [("fail", "plugin", "%s failed to load: %s. %s" % (spec, err, _plugin_fix(project, spec)),
+                dict(plugin_ok=False)) for spec, err in api.errors]
     for gen in (_wiki, _index, _use, _plan, _update, _hooks):     # the hook runs memcrumbs from PATH: last
         try:
             checks += list(gen(project))

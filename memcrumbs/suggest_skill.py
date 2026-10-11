@@ -29,6 +29,8 @@ EVERYDAY = {"ls", "dir", "cd", "cat", "type", "echo", "pwd", "git", "grep", "rg"
             "measure-object", "select-object", "where-object", "foreach-object", "format-table", "diff", "jq"}
 LIVE = re.compile(r"(?i)ssh|scp|rsync|plink|pscp|invoke-command|enter-pssession|deploy|restart|stop|kill|remove|"
                   r"delete|drop|reboot|publish|release|push")
+LIVE_WORDS = re.compile(r"(?i)\b(live|prod|production)\b")
+CODE_SPANS = re.compile(r"```.*?```|~~~.*?~~~|`[^`\n]+`", re.S)
 STATUS_WORD = re.compile(r"(?i)status|health|ping|uptime|ready|alive")
 READ_ONLY = re.compile(r"(?i)^(get-|test-|show\b|list\b|ps\b|uptime|ping|curl|wget|invoke-webrequest|invoke-restmethod|"
                        r"systemctl status|sc(\.exe)? query|docker ps|kubectl get|service \S+ status)")
@@ -203,6 +205,16 @@ def _skill(project, kind, key, why, action, evidence_line, name, title, pages, l
                             "pages listed; keep facts in the wiki", score=score, cheap=cheap, tailor=tailor)
 
 
+def live_runbook(meta, body, stem):
+    """A runbook touches live systems when it says `destructive:`, its name holds a live verb, its summary, tags or
+    aliases name live or production, or a step in its code runs remotely or deploys: its skill is then owner-only."""
+    if markdown.truthy(meta.get("destructive")) or LIVE.search(stem):
+        return True
+    said = " ".join(" ".join(map(str, v)) if isinstance(v, list) else str(v)
+                    for v in (meta.get(k) for k in ("summary", "tags", "aliases")) if v)
+    return bool(LIVE_WORDS.search(said)) or any(LIVE.search(span) for span in CODE_SPANS.findall(body))
+
+
 def _runbook(project, words):
     from memcrumbs.store import Store
     from memcrumbs import synonyms
@@ -254,8 +266,8 @@ def _skills(project, cheap_only=False):
         if n < MIN_READS or not (p.parent.name == "runbooks" or
                                  str(markdown.frontmatter(read_text(p))[0].get("kind") or "") == "runbook"):
             continue
-        meta = markdown.frontmatter(read_text(p))[0]
-        live = markdown.truthy(meta.get("destructive")) or bool(LIVE.search(p.stem))
+        meta, body, _ = markdown.frontmatter(read_text(p))
+        live = live_runbook(meta, body, p.stem)
         s = _skill(project, "skill", "runbook:" + p.stem, "the runbook %s was read %d times" % (project.rel(p), n),
                    "scaffold a skill that runs it", "the runbook was read %d times" % n, slug(p.stem),
                    str(meta.get("title") or p.stem), [p.stem], live, n, cheap=True)

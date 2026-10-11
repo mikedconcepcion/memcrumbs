@@ -6,7 +6,8 @@ tags: [rules]
 ---
 # Rules
 
+One line each under Top: what needs human approval, what is never done; each linking the page that has the detail.
+
 ## Top
-- (one line each: what needs human approval, what is never done; link the detail page: [[page]])
 
 ## Detail

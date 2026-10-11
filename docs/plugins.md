@@ -10,7 +10,9 @@ Core, packs and project plugins:
 
 List them in `memcrumbs.toml`: `plugins = ["mypack", "plugins/myapp.py", "mypkg.memcrumbs_pack"]`. A bare
 name is looked up as `memcrumbs.packs.NAME`, then as an entry point named NAME. A plugin that fails to load
-never stops a command: `status` shows one line about it and `check` reports it.
+never stops a command: `status` shows one line about it, `check` reports it, and `doctor` fails with the fix.
+Its documents stay in the index, no longer refreshed, until it loads again; once it is out of `plugins`, they
+leave the index. `index` names the count either way.
 
 ## The API
 

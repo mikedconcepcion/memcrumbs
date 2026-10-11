@@ -3,6 +3,45 @@
 What changed for users, newest first. Versions follow [semver](https://semver.org/) from 1.0; before 1.0 the
 command line and config may still change, and every such change is listed here.
 
+## [0.4.0] — 2026-10-11
+
+### Added
+
+- **One-command setup:** `cd your-repo && memcrumbs init`. It names the project after the repo and writes a starter
+  wiki whose map is drafted from the repo (its README, languages, folders, test command and CI). It indexes the
+  code and the repo's own markdown, skipping generated folders such as a virtual environment. It asks once before
+  wiring Claude Code (`--yes` answers ahead), then runs `doctor`, all in at most 8 lines. Running it again
+  repairs and upgrades, and says when nothing changed. `memcrumbs init --remove` takes the wiring out byte for
+  byte and keeps the wiki (`--delete-wiki` deletes it too). `memcrumbs init NAME` outside a repo still makes a wiki
+  on its own.
+- **A first-run step:** a new wiki's header says rules and gotchas are empty, and the skill tells the agent to
+  draft them from CLAUDE.md, the README and the code. The drafts wait for your `memcrumbs review`.
+
+### Changed
+
+- **`memcrumbs update` finishes an upgrade made by hand** (`pip install --upgrade`, `git pull`): it re-indexes and
+  refreshes the wiring once, and a second run changes nothing. The header and `doctor` say when an upgrade is not
+  finished.
+- **A new wiki starts clean:** `rules.md` and `gotchas.md` start empty (no placeholder lines), and the header
+  skips a section with nothing in it.
+- **A plugin that does not load:**
+  - `doctor` says how to keep it (copy it into the project's `plugins/` folder) or take it out;
+  - its documents stay in the index, no longer refreshed, and `index` says how many;
+  - once it is out of `plugins`, they leave the index.
+- **Runbook skill offers are owner-only in more cases:** also when the runbook's summary, tags or aliases say live
+  or production, or a step in its code runs on a remote host or deploys.
+- **`suggest`:** `split` is offered only for a page with sections to split; a long table is already returned row by
+  row.
+
+### Fixed
+
+- `wire` no longer calls its own skill "different from this version" when only the line endings differ, as on
+  every Windows checkout with git's `autocrlf`. Such a skill is now refreshed and removed like any other.
+
+### Upgrading from 0.2.0
+
+0.2.0 has no `update` command: run `pip install --upgrade memcrumbs`, then `memcrumbs update` once to finish.
+
 ## [0.3.0] — 2026-10-11
 
 ### Added

@@ -443,6 +443,33 @@ class Skills(ProjectCase):
         self.assertIn("already in", run(["-p", "t", "rule", "Always ask before restarting the web service."])[1])
         self.assertIn("2 new rule/gotcha lines", run(["-p", "t", "status"])[1])
 
+    def test_a_runbook_is_live_by_its_words_and_steps_not_only_its_name(self):
+        books = {"tune-config": ("summary: retunes the live config within 30 s\n", "edit the file, save it"),
+                 "rotate-logs": ("tags: [prod, logs]\n", "move the old logs aside"),
+                 "apply-settings": ("", "```\nssh web-01 apply-settings\n```"),
+                 "read-report": ("summary: the weekly totals\n", "open the report and read the totals")}
+        for name, (fm, body) in books.items():
+            page(self.wiki, "runbooks/%s.md" % name, "---\ntitle: %s\n%sverified: 2026-10-01\n---\n# %s\n%s\n"
+                 % (name, fm, name, body))
+        project = proj.resolve("t")
+        project.data.mkdir(parents=True, exist_ok=True)
+        (project.data / "hits.json").write_text(json.dumps({"wiki/runbooks/%s.md" % n: 9 for n in books}),
+                                                encoding="utf-8")
+        found = json.loads(run(["-p", "t", "suggest", "--kind", "skill", "--json", "--full"])[1])["suggestions"]
+        owner_only = {n: "owner-only" in next(s for s in found if "runbooks/%s.md" % n in s["why"])["action"]
+                      for n in books}
+        self.assertEqual(owner_only, {"tune-config": True, "rotate-logs": True, "apply-settings": True,
+                                      "read-report": False})
+
+    def test_split_is_offered_only_where_there_are_sections(self):
+        page(self.wiki, "hosts.md", "---\ntitle: Hosts\nsummary: s\nverified: 2026-10-01\n---\n# Hosts\n| host | role |\n"
+             "|---|---|\n" + "".join("| h%03d | web |\n" % i for i in range(400)))
+        page(self.wiki, "guide.md", "---\ntitle: Guide\nsummary: s\nverified: 2026-10-01\n---\n# Guide\n## One\n" +
+             "a line\n" * 200 + "## Two\n" + "a line\n" * 200)
+        whys = [s["why"] for s in json.loads(run(["-p", "t", "suggest", "--kind", "split", "--json"])[1])["suggestions"]]
+        self.assertTrue(any("guide.md" in w for w in whys), whys)
+        self.assertFalse(any("hosts.md" in w for w in whys), whys)      # one table: lookups already return its rows
+
 
 class Gaps(ProjectCase):
     def setUp(self):

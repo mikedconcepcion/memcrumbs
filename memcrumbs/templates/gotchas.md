@@ -6,7 +6,8 @@ tags: [gotchas]
 ---
 # Gotchas
 
+One line each under Top, most expensive first, each linking the page that has the detail.
+
 ## Top
-- (one line each, most expensive first; link the page with the detail: [[page]])
 
 ## More
