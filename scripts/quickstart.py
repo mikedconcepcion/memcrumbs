@@ -16,7 +16,9 @@ LIMIT_S = 120
 
 
 def main():
+    sys.stdout.reconfigure(errors="replace")                   # a failure's output prints on any console
     t0 = time.time()
+    path = os.environ.get("PATH", "")
     with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as d:
         home = Path(d)
         exe = shutil.which("memcrumbs")
@@ -25,10 +27,12 @@ def main():
             bindir = home / "venv" / ("Scripts" if os.name == "nt" else "bin")
             subprocess.run([str(bindir / "python"), "-m", "pip", "install", "-q", str(ROOT)], check=True)
             exe = str(bindir / ("memcrumbs.exe" if os.name == "nt" else "memcrumbs"))
+            path = str(bindir) + os.pathsep + path               # installed: on PATH, as the session hook needs
             print("installed into a fresh venv in %.1f s" % (time.time() - t0))
         repo = home / "code" / "myapp"
         shutil.copytree(ROOT / "examples" / "hello-src", repo)
-        env = dict(os.environ, MEMCRUMBS_PROJECTS=str(home / "projects"), HOME=str(home), USERPROFILE=str(home))
+        env = dict(os.environ, MEMCRUMBS_PROJECTS=str(home / "projects"), HOME=str(home), USERPROFILE=str(home),
+                   PATH=path)
         env.pop("MEMCRUMBS_PROJECT", None)
         exe = exe or sys.exit("memcrumbs is not on PATH: pip install . first, or use --venv")
         subprocess.run(["git", "-C", str(repo), "init", "-q"], check=True)          # a repo, as yours is
