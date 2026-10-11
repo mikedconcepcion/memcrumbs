@@ -2,7 +2,7 @@
 import argparse
 
 # commands that run without a configured project
-NO_PROJECT = ("init", "template", "outline", "scan")
+NO_PROJECT = ("init", "template", "outline", "scan", "update")
 
 
 def build_parser(extra=None, errors=None):
@@ -92,6 +92,9 @@ def build_parser(extra=None, errors=None):
     s.add_argument("--all", action="store_true", help="list baselined findings too")
     s.add_argument("--strict", action="store_true", help="exit 1 on new warnings as well")
     s.add_argument("--dupes", action="store_true", help="also list near-duplicate pages")
+    s = add("update", help="upgrade memcrumbs from PyPI, then re-index and refresh what wire installed")
+    s.add_argument("--check", action="store_true", help="only say whether a newer release exists")
+    s.add_argument("--no-wire", action="store_true", help="do not refresh the CLAUDE.md block, skill and allow rules")
     s = add("scan", help="secret-scan a folder, file, sdist or wheel; exit 1 on hits")
     s.add_argument("path", nargs="?", default=".")
     s = add("status", help="the session header")

@@ -3,6 +3,22 @@
 What changed for users, newest first. Versions follow [semver](https://semver.org/) from 1.0; before 1.0 the
 command line and config may still change, and every such change is listed here.
 
+## [0.3.0] — 2026-10-11
+
+### Added
+
+- **`memcrumbs update`** upgrades to the newest release in one step. It uses the tool that installed memcrumbs
+  (pip, pipx or uv), then re-indexes your projects and refreshes the block, skill and allow rules `wire` put in your
+  repos. `update --check` only says whether a newer release exists.
+- **An opt-in update notice:** with `[update] notify = true`, memcrumbs checks PyPI at most once a day, after slow
+  commands such as `check` or `index`, and the session header says when a newer release is out.
+
+### Changed
+
+- Install from PyPI: `pip install memcrumbs`.
+- The PyPI page links to the website, the source, the issues and this changelog, and its links work.
+- The only network use is updating: `memcrumbs update` when you run it, and the daily check if you turn it on.
+
 ## [0.2.0] — 2026-10-11, the first public release
 
 ### Find and trust what the wiki knows

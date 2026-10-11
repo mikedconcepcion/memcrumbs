@@ -9,7 +9,7 @@ Your wiki, config, plugins and question set are yours. They live in your project
 ## 1. Install (ask the owner)
 
 ```
-pip install git+https://github.com/mikedconcepcion/memcrumbs
+pip install memcrumbs
 memcrumbs --version
 ```
 
@@ -93,11 +93,13 @@ Aim for recall@3 of 0.85 or more. A miss usually means a page needs a better `su
 ## Upgrading
 
 ```
-pip install --upgrade git+https://github.com/mikedconcepcion/memcrumbs
-memcrumbs -p <project> index                                  # a new index schema rebuilds here, once
-memcrumbs -p <project> wire --repo <repo> --apply --allow     # refreshes the block, the skill and the allow rules
+memcrumbs update                     # newest release, then re-index and refresh the block, skill and allow rules
 memcrumbs -p <project> doctor
 ```
+
+`memcrumbs update --check` only says whether a newer release exists. To be told without asking, set
+`[update] notify = true` in `memcrumbs.toml`: the session header then shows one line when a release is out. By
+hand, the same upgrade is `pip install --upgrade memcrumbs`, then `index` and `wire --apply --allow` per project.
 
 The wiki is plain markdown and an upgrade never rewrites it. To roll back, run
 `memcrumbs -p <project> wire --remove --apply` and reinstall the previous version.

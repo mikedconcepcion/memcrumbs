@@ -21,12 +21,12 @@ from memcrumbs.store import SCHEMA_VERSION, IndexBroken, Locked, Store
 from memcrumbs.util import read_text
 
 SCHEMA = {"": {"name", "title", "wiki", "repos", "plugins", "code", "docs", "security", "search", "check", "status",
-               "facts", "suggest", "review"},
+               "facts", "suggest", "review", "update"},
           "code": {"roots", "include", "exclude"}, "docs": {"name", "root", "include", "exclude", "kind"},
           "security": {"never_index", "secret_keys"}, "search": {"synonyms", "thesaurus", "thesaurus_remove"},
           "check": {"max_lines", "stale_days"},
           "status": {"sections", "max_tokens", "max_chars", "rules", "map_lines", "gotchas", "journal", "style_rules"},
-          "facts": {"page", "bind"}, "suggest": {"transcripts", "query_log", "gap_cover"}, "review": {"gate_header"}}
+          "facts": {"page", "bind"}, "suggest": {"transcripts", "query_log", "gap_cover"}, "review": {"gate_header"}, "update": {"notify"}}
 HOOK_SLOW_MS, HOOK_FAIL_MS = 1500, 5000
 
 
@@ -225,6 +225,18 @@ def _use(project):
         dict(bench_questions=total["n"], recall_at_3=total["recall_at_3"], recall_at_1=total["recall_at_1"]))
 
 
+def _update(project):
+    from memcrumbs import update
+    if not update.notify_on(project):
+        return
+    latest = update._stored(project).get("latest")
+    if update.newer(latest):
+        yield "warn", "update", "memcrumbs %s is available (you have %s): memcrumbs update" % (latest, __version__), \
+            dict(update_available=True)
+    else:
+        yield "ok", "update", "newest known release: %s" % (latest or "not checked yet"), dict(update_available=False)
+
+
 def _plan(project):
     items = plan.candidates(project)
     state = plan.load_state(project)
@@ -236,7 +248,7 @@ def _plan(project):
 def run(out, project, api, share=False):
     checks = list(_environment()) + list(_config(project))
     checks += [("fail", "plugin", "%s failed to load: %s" % e, dict(plugin_ok=False)) for e in api.errors]
-    for gen in (_wiki, _index, _use, _plan, _hooks):     # the hook runs memcrumbs from PATH: last
+    for gen in (_wiki, _index, _use, _plan, _update, _hooks):     # the hook runs memcrumbs from PATH: last
         try:
             checks += list(gen(project))
         except Exception as e:                       # a broken check is itself a finding, never a crash

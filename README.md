@@ -35,8 +35,8 @@ memcrumbs gives each project a memory that stays small, current and safe.
 - **You stay in control of token spend.** Re-indexing is free and local. Rewriting stale pages is agent work, so
   `memcrumbs plan` and the dashboard let you pick the pages and the budget.
 
-Standard library only: no model calls, no network, no background service, no per-tool-call hooks. Your wiki is
-plain markdown in your own folder.
+Standard library only: no model calls, no background service, no per-tool-call hooks, and no network use except
+`memcrumbs update`, when you run it. Your wiki is plain markdown in your own folder.
 
 ## What it looks like
 
@@ -62,8 +62,12 @@ EmberOps.psm1 — cited by 1 decision (ACCEPTED), 2 incidents, 1 runbook
 ## Install
 
 ```bash
-pip install git+https://github.com/mikedconcepcion/memcrumbs   # Python 3.11+; puts `memcrumbs` on PATH
+pip install memcrumbs            # Python 3.11+; puts `memcrumbs` on PATH (pipx and uv tool work too)
 ```
+
+To upgrade later, run `memcrumbs update`: it installs the newest release the same way memcrumbs was installed,
+re-indexes your projects and refreshes the agent setup `wire` put in your repos. Add `[update] notify = true` to a
+project's config to get a one-line notice in the session header when a new release is out.
 
 Your wikis live outside the package, in `~/.memcrumbs/projects` by default. To keep them somewhere else (for
 example a private git repo), set `projects_dir` in `~/.memcrumbs/config.toml` or the `MEMCRUMBS_PROJECTS`
@@ -89,7 +93,7 @@ memcrumbs check                                                      # lint: sec
 ```
 
 `wire --remove --apply` takes everything out again, byte for byte. A step-by-step setup that your agent can
-follow is in [docs/adopting.md](docs/adopting.md).
+follow is in [docs/adopting.md](https://github.com/mikedconcepcion/memcrumbs/blob/main/docs/adopting.md).
 
 ## Everyday commands
 
@@ -105,16 +109,17 @@ follow is in [docs/adopting.md](docs/adopting.md).
 | `check` · `scan [path]` | Lint the wiki · secret-scan a folder, an sdist or a wheel |
 | `plan` · `dashboard --open` | What needs a refresh and what it would cost · an HTML overview |
 | `doctor` · `stats --usage` · `bench` | Health check · output size per command · lookup quality on your own questions |
+| `update` · `update --check` | Upgrade to the newest release and refresh what an upgrade needs · only say whether one exists |
 
-Every command takes `--json`. Full reference: [docs/cli.md](docs/cli.md).
+Every command takes `--json`. Full reference: [docs/cli.md](https://github.com/mikedconcepcion/memcrumbs/blob/main/docs/cli.md).
 
 ## Documentation
 
-- [Setting up a project](docs/adopting.md), step by step
-- [Writing good crumbs](docs/writing-crumbs.md): pages, rules, gotchas, decisions, incidents, facts
-- [Configuration](docs/config.md) · [Command reference](docs/cli.md)
-- [Plugins and packs](docs/plugins.md): add a source, a check, a header section or a language
-- [Security](SECURITY.md): what redaction promises and what it does not
+- [Setting up a project](https://github.com/mikedconcepcion/memcrumbs/blob/main/docs/adopting.md), step by step
+- [Writing good crumbs](https://github.com/mikedconcepcion/memcrumbs/blob/main/docs/writing-crumbs.md): pages, rules, gotchas, decisions, incidents, facts
+- [Configuration](https://github.com/mikedconcepcion/memcrumbs/blob/main/docs/config.md) · [Command reference](https://github.com/mikedconcepcion/memcrumbs/blob/main/docs/cli.md)
+- [Plugins and packs](https://github.com/mikedconcepcion/memcrumbs/blob/main/docs/plugins.md): add a source, a check, a header section or a language
+- [Security](https://github.com/mikedconcepcion/memcrumbs/blob/main/SECURITY.md): what redaction promises and what it does not
 
 ## Contributing and reporting bugs
 
@@ -122,12 +127,12 @@ Every command takes `--json`. Full reference: [docs/cli.md](docs/cli.md).
   template. Paste the output of `memcrumbs doctor --share`: it holds versions, counts and timings only, never
   your paths, page text or secrets.
 - **An idea or a missing feature?** Use the feature request template. Say what you were trying to do.
-- **A security problem?** Please report it privately, as described in [SECURITY.md](SECURITY.md), not in a
+- **A security problem?** Please report it privately, as described in [SECURITY.md](https://github.com/mikedconcepcion/memcrumbs/blob/main/SECURITY.md), not in a
   public issue.
-- **Want to contribute code or docs?** See [CONTRIBUTING.md](CONTRIBUTING.md): how to run the tests, the few
+- **Want to contribute code or docs?** See [CONTRIBUTING.md](https://github.com/mikedconcepcion/memcrumbs/blob/main/CONTRIBUTING.md): how to run the tests, the few
   rules the code follows, and what a good pull request looks like.
 
 ## Status
 
 Alpha: usable day to day, with the command line and config still allowed to change before 1.0. Changes are
-listed in [CHANGELOG.md](CHANGELOG.md). License: [Apache-2.0](LICENSE).
+listed in [CHANGELOG.md](https://github.com/mikedconcepcion/memcrumbs/blob/main/CHANGELOG.md). License: [Apache-2.0](https://github.com/mikedconcepcion/memcrumbs/blob/main/LICENSE).

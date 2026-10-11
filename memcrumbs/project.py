@@ -42,7 +42,7 @@ class Project:
         self.dir = self.cfg_path.parent
         with open(self.cfg_path, "rb") as f:
             self.cfg = tomllib.load(f)
-        for table in ("check", "security", "status", "search", "code", "facts", "review", "suggest"):
+        for table in ("check", "security", "status", "search", "code", "facts", "review", "suggest", "update"):
             if table in self.cfg and not isinstance(self.cfg[table], dict):
                 raise ValueError("[%s] must be a table" % table)
         self.name = self.cfg.get("name", self.dir.name)

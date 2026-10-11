@@ -31,7 +31,9 @@ What is enforced:
   boundary: an agent that can run any shell command can get around it, for example by editing the review
   state file or faking a terminal. The boundary is your agent's permission settings.
 
-memcrumbs makes no network calls, runs no service and installs no per-tool-call hooks. Its only hook is a
+memcrumbs runs no service and installs no per-tool-call hooks. Its only network use is asking PyPI for the newest
+release: when you run `memcrumbs update`, and once a day if you turn on `[update] notify`. Nothing about your
+projects is sent; the request is a plain read of PyPI's public package index. Its only hook is a
 SessionStart command (`memcrumbs -p NAME status --hook`), which never fails the session.
 
 ## Reporting a vulnerability

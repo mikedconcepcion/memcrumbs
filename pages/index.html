@@ -26,9 +26,10 @@
  "description": "An open-source CLI that gives coding agents like Claude Code a project memory: a markdown wiki and a local index that answers in a few hundred tokens.",
  "url": "https://mikedconcepcion.github.io/memcrumbs/",
  "codeRepository": "https://github.com/mikedconcepcion/memcrumbs",
+ "downloadUrl": "https://pypi.org/project/memcrumbs/",
  "applicationCategory": "DeveloperApplication",
  "operatingSystem": "Windows, macOS, Linux",
- "softwareVersion": "0.2.0",
+ "softwareVersion": "0.3.0",
  "license": "https://www.apache.org/licenses/LICENSE-2.0",
  "programmingLanguage": "Python",
  "softwareRequirements": "Python 3.11 or newer",
@@ -78,7 +79,7 @@
    "name": "Does it send my code or notes anywhere?",
    "acceptedAnswer": {
     "@type": "Answer",
-    "text": "No. memcrumbs makes no network calls and no model calls, and runs no background service. Your wiki is plain markdown in a folder you choose, and the index is a local SQLite file."
+    "text": "No. memcrumbs makes no model calls and runs no background service. Its only network use is asking PyPI for the newest release, when you run memcrumbs update or, if you turn it on, once a day. Your wiki is plain markdown in a folder you choose, and the index is a local SQLite file."
    }
   },
   {
@@ -276,9 +277,9 @@ footer .right { margin-left: auto; }
         <h1>Project memory for <span class="soft">coding agents</span></h1>
         <p class="lede">memcrumbs is an open-source command-line tool that gives coding agents such as Claude Code a project
           memory: a small markdown wiki the agent reads before your code, and a local index that answers questions in a few
-          hundred tokens. It uses only Python's standard library and makes no network calls.</p>
+          hundred tokens. It uses only Python's standard library, and the network only to update itself.</p>
         <div class="install">
-          <code id="install-cmd">pip install git+https://github.com/mikedconcepcion/memcrumbs</code>
+          <code id="install-cmd">pip install memcrumbs</code>
           <button type="button" id="copy-btn">Copy</button>
         </div>
         <div class="hero-links">
@@ -286,7 +287,7 @@ footer .right { margin-left: auto; }
           <a href="https://github.com/mikedconcepcion/memcrumbs/blob/main/docs/adopting.md">Setup guide</a>
           <a href="https://github.com/mikedconcepcion/memcrumbs">Source on GitHub</a>
         </div>
-        <div class="facts-line"><span>no model calls</span><span>no network</span><span>no background service</span><span>Windows · macOS · Linux</span></div>
+        <div class="facts-line"><span>no model calls</span><span>local only</span><span>no background service</span><span>Windows · macOS · Linux</span></div>
       </div>
 
       <figure class="term" aria-label="A memcrumbs session on the invented sample project">
@@ -451,8 +452,8 @@ EmberOps.psm1 — cited by 1 decision (ACCEPTED), 2 incidents, 1 runbook</pre>
 
     <section id="start" aria-labelledby="start-h">
       <div class="sec-head"><h2 id="start-h">Quick start</h2></div>
-      <p class="intro">Four commands from install to a wired repository. The setup guide covers the rest, step by step.</p>
-      <figure class="term"><pre><span class="p">$</span> pip install git+https://github.com/mikedconcepcion/memcrumbs
+      <p class="intro">Four commands from install to a wired repository. Later, <code>memcrumbs update</code> keeps it current. The setup guide covers the rest, step by step.</p>
+      <figure class="term"><pre><span class="p">$</span> pip install memcrumbs
 <span class="p">$</span> memcrumbs init myapp --repo /code/myapp --title "My App"
 <span class="p">$</span> memcrumbs -p myapp index
 <span class="p">$</span> memcrumbs -p myapp wire --repo /code/myapp --apply --allow
@@ -466,8 +467,9 @@ EmberOps.psm1 — cited by 1 decision (ACCEPTED), 2 incidents, 1 runbook</pre>
           gotchas, runbooks, decisions and incidents, plus a local SQLite full-text index of the wiki, your docs and your code
           symbols. It is written in Python and uses only the standard library.</p></details>
       <details><summary>Does it send my code or notes anywhere?</summary>
-        <p>No. memcrumbs makes no network calls and no model calls, and runs no background service. Your wiki is plain
-          markdown in a folder you choose, and the index is a local SQLite file.</p></details>
+        <p>No. memcrumbs makes no model calls and runs no background service. Its only network use is asking PyPI for
+          the newest release, when you run <code>memcrumbs update</code> or, if you turn it on, once a day. Your wiki is
+          plain markdown in a folder you choose, and the index is a local SQLite file.</p></details>
       <details><summary>Which coding agents does it work with?</summary>
         <p>Claude Code gets a <code>CLAUDE.md</code> block, a session-start hook and a skill from <code>memcrumbs wire</code>.
           Other agents can read an <code>AGENTS.md</code> block (<code>wire --target agents</code>), and any agent that can run
@@ -493,7 +495,7 @@ EmberOps.psm1 — cited by 1 decision (ACCEPTED), 2 incidents, 1 runbook</pre>
       <a href="https://github.com/mikedconcepcion/memcrumbs/blob/main/SECURITY.md">Security</a>
       <a href="https://github.com/mikedconcepcion/memcrumbs/issues/new/choose">Report a bug</a>
     </nav>
-    <span class="right">Version 0.2.0 · alpha</span>
+    <span class="right">Version 0.3.0 · alpha</span>
   </footer>
 </div>
 

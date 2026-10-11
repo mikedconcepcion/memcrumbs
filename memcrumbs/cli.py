@@ -223,9 +223,10 @@ def run(args, project, api):
         raise
     finally:
         out.close()
-    if c in SCAN_AFTER:                          # after the output: the daily suggestion scan never delays a lookup
-        from memcrumbs import suggest
+    if c in SCAN_AFTER:                          # after the output: the daily scans never delay a lookup
+        from memcrumbs import suggest, update
         suggest.maybe_scan(project, api)
+        update.maybe_check(project)              # opt-in ([update] notify): at most once a day
     return code
 
 
@@ -253,6 +254,10 @@ def _main(argv):
                 cmd_setup.init(out, args.name, args.repo, args.title)
             elif c == "template":
                 cmd_setup.template(out)
+            elif c == "update":
+                from memcrumbs import update
+                chosen = name or os.environ.get("MEMCRUMBS_PROJECT")
+                return update.command(out, args, [proj.resolve(chosen)] if chosen else proj.all_projects())
             elif c == "outline":
                 cmd_read.outline(out, args.path, _kinds(args.kinds), args.grep, args.depth,
                                  project.blocked if project else proj.is_blocked, _cited(project))

@@ -5,8 +5,8 @@
 memcrumbs is an open-source command-line tool, written in Python with only the standard library. It keeps a project's
 working knowledge (standing rules, gotchas, runbooks, decisions, incidents and a dated journal) in short markdown pages,
 and indexes those pages, your docs and your code symbols in a local SQLite FTS5 index. A coding agent reads a header of
-rules once per session, then looks things up with `memcrumbs find` instead of reading whole files. It makes no network
-calls and no model calls, and runs no background service. License: Apache-2.0.
+rules once per session, then looks things up with `memcrumbs find` instead of reading whole files. It makes no model
+calls and runs no background service; it uses the network only to update itself (`memcrumbs update`). License: Apache-2.0.
 
 ## What it does
 - Session header: standing rules, project map, top gotchas and recent journal lines, capped at 1,000 tokens by default.
@@ -28,11 +28,15 @@ calls and no model calls, and runs no background service. License: Apache-2.0.
 - CI: Linux, macOS and Windows with Python 3.11, 3.12 and 3.13.
 
 ## Install
-pip install git+https://github.com/mikedconcepcion/memcrumbs
+pip install memcrumbs
+
+## Upgrade
+memcrumbs update
 
 ## Links
 - Website: https://mikedconcepcion.github.io/memcrumbs/
 - Repository: https://github.com/mikedconcepcion/memcrumbs
+- PyPI: https://pypi.org/project/memcrumbs/
 - Setup guide: https://github.com/mikedconcepcion/memcrumbs/blob/main/docs/adopting.md
 - Changelog: https://github.com/mikedconcepcion/memcrumbs/blob/main/CHANGELOG.md
 - Security policy: https://github.com/mikedconcepcion/memcrumbs/blob/main/SECURITY.md

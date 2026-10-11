@@ -35,8 +35,9 @@ memcrumbs scan .                                  # no secret-like values in the
 
 Before you open a pull request:
 
-- **Standard library only.** No new dependencies. memcrumbs makes no model calls, needs no network, runs no
-  background service and installs no per-tool-call hooks; changes must keep it that way.
+- **Standard library only.** No new dependencies. memcrumbs makes no model calls, uses the network only in
+  `memcrumbs update`, runs no background service and installs no per-tool-call hooks; changes must keep it that
+  way.
 - **Tests:** add or update a test for what you changed, and make the whole suite pass. CI runs it on Linux,
   macOS and Windows with Python 3.11–3.13.
 - **Invented examples only.** Test data, docs and examples use made-up projects (like `bench/kiln`), never real

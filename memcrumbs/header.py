@@ -172,6 +172,10 @@ def status(out, project, api, counts=None, stale=None, unreviewed=0):
     nudge = suggest.header_line(project, api)              # one line, only when something is new
     if nudge:
         head.append(nudge)
+    from memcrumbs import update
+    newer = update.header_line(project)                    # opt-in; read from the stored daily check
+    if newer:
+        head.append(newer)
     text, cut = render(head, secs, budget)
     if not out.json:
         out.cap = budget + 400                   # the layout above already fits the budget; this is a backstop
