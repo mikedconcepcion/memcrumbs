@@ -3,6 +3,7 @@ import io
 import json
 import subprocess
 import urllib.request
+from pathlib import Path
 from types import SimpleNamespace
 from unittest import mock
 
@@ -87,7 +88,11 @@ class Command(ProjectCase):
         tails = [c[3:] for c in calls[1:]]                                               # then the new code runs
         self.assertIn(["--version"], tails)
         self.assertIn(["-p", "t", "index"], tails)
-        self.assertIn(["-p", "t", "wire", "--repo", str(self.repo), "--target", "claude", "--apply", "--allow"], tails)
+        rewire = [t for t in tails if "wire" in t]                                       # the repo as resolved: on
+        self.assertEqual(len(rewire), 1, tails)                                          # macOS /var is /private/var,
+        self.assertEqual(Path(rewire[0][4]).resolve(), self.repo.resolve())              # on Windows 8.3 names expand
+        self.assertEqual(rewire[0][:4] + rewire[0][5:],
+                         ["-p", "t", "wire", "--repo", "--target", "claude", "--apply", "--allow"])
         calls.clear()
         with pypi("9.9.9"), mock.patch.object(update, "installer", return_value=("pip", PIP)), \
                 mock.patch.object(update.subprocess, "run", side_effect=recorder(calls)):
