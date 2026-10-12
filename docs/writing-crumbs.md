@@ -96,11 +96,12 @@ Agents write most of a wiki, so the owner's review has to be cheap:
   says `UNREVIEWED` on its hits.
 - New lines in the rules' and gotchas' `## Top` reach the session header only after review, because the header
   speaks to every session. One header line says how many wait.
-- `memcrumbs review` lists everything that waits as one digest. Approve it in your own terminal
-  (`--approve all` or ids); inside an agent shell approval is refused. A human's `verify` also counts as a
-  review.
+- `memcrumbs review` lists everything that waits as one digest. Approve it in Claude Code with `/memcrumbs-review`:
+  the agent shows you each item, and Claude Code asks you before the approval runs, in every permission mode.
+  Or approve it in your own terminal (`--approve all` or ids, then a code). Other agent shells are refused. A
+  human's `verify` also counts as a review.
 - A page that looks planted: `memcrumbs quarantine <page>`. It stays on disk, out of the index and the header,
-  until `--lift`.
+  until the owner lifts it (`memcrumbs quarantine --lift <page>`).
 
 ## Suggestions
 

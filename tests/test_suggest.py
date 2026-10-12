@@ -7,7 +7,7 @@ import time
 from pathlib import Path
 from unittest import mock
 
-from memcrumbs import project as proj, suggest, suggest_guard, suggest_skill, transcripts
+from memcrumbs import project as proj, suggest, suggest_flow, suggest_guard, suggest_skill, transcripts
 from test_cli import ProjectCase, run
 
 
@@ -32,7 +32,7 @@ class Framework(ProjectCase):
     def test_list_show_apply_undo_dismiss(self):
         self.assertNotIn("new suggestion", run(["-p", "t", "status"])[1])     # the header never scans
         run(["-p", "t", "check"])                                               # the daily scan runs after it
-        self.assertIn("1 new suggestion: memcrumbs suggest", run(["-p", "t", "status"])[1])
+        self.assertIn("1 new suggestion: tell the owner; list them only on their word", run(["-p", "t", "status"])[1])
         out = run(["-p", "t", "suggest"])[1]
         self.assertIn("near-duplicate pages", out)
         self.assertNotIn("new suggestion", run(["-p", "t", "status"])[1])                    # seen now
@@ -328,6 +328,88 @@ class MemoryPointers(ProjectCase):
             self.assertEqual((self.mem / "MEMORY.md").read_bytes(), index_before)  # the first write was undone
             self.assertNotIn(sid, suggest.load_state(proj.resolve("t"))["applied"])
             self.assertEqual(ids("memory"), [sid])                                # still offered
+
+
+def task_transcript(folder, tasks):
+    """tasks: [(day, [commands, or EDIT])] → one transcript in which each task opens with a message from the user."""
+    folder.mkdir(parents=True, exist_ok=True)
+    lines = []
+    for k, (day, steps) in enumerate(tasks):
+        at, sess = "%sT10:%02d:00Z" % (day, k % 60), "s-" + day
+        lines.append(json.dumps({"type": "user", "timestamp": at, "sessionId": sess,
+                                 "message": {"role": "user", "content": "the next task"}}))
+        uses = [{"type": "tool_use", "name": "Edit", "input": {"file_path": "app.py"}} if c == "EDIT" else
+                {"type": "tool_use", "name": "Bash", "input": {"command": c}} for c in steps]
+        lines.append(json.dumps({"type": "assistant", "timestamp": at, "sessionId": sess, "message": {"content": uses}}))
+    (folder / "f.jsonl").write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+EDIT = "EDIT"
+
+
+class Flows(ProjectCase):
+    """The same steps in the same order in many tasks: a task flow or a pipeline, offered as a skill."""
+
+    def setUp(self):
+        super().setUp()
+        cfg = self.projects / "t" / "memcrumbs.toml"
+        cfg.write_text(cfg.read_text(encoding="utf-8") + "\n[suggest]\ntranscripts = true\n", encoding="utf-8")
+        self.home = Path(self.tmp.name) / "home"
+        self.folder = self.home / ".claude" / "projects" / transcripts.mangle(self.repo)
+        self.days = [(dt.date.today() - dt.timedelta(days=k)).isoformat() for k in range(3)]
+
+    def skills(self):
+        with mock.patch.object(Path, "home", return_value=self.home):
+            return [s["why"] for s in json.loads(run(["-p", "t", "suggest", "--kind", "skill", "--json", "--full"])[1])[
+                "suggestions"]]
+
+    def test_a_pipeline_pings_the_header_and_is_scaffolded_without_its_commands(self):
+        pipeline = ["python scripts/build.py --fast", "ls -la", "python -m unittest discover -s tests",
+                    "git status", "npm run package", "cat out/log.txt", "gh release create v1 out/app.zip"]
+        task_transcript(self.folder, [(d, ["git log -1"] + pipeline + ["echo done"]) for d in self.days])
+        with mock.patch.object(Path, "home", return_value=self.home):
+            self.assertNotIn("new suggestion", run(["-p", "t", "status"])[1])     # the header never scans
+            run(["-p", "t", "index"])                                             # a slow command: the daily scan
+            head = run(["-p", "t", "status"])[1]
+            self.assertIn("tell the owner; list them only on their word", head)    # a ping, nothing more
+            for word in ("build.py", "unittest", "npm", "gh "):
+                self.assertNotIn(word, head)
+            found = json.loads(run(["-p", "t", "suggest", "--kind", "skill", "--json"])[1])["suggestions"]
+            flow = next(s for s in found if "pipeline" in s["why"])
+            self.assertIn("build.py → unittest discover → npm run package → gh release", flow["why"])
+            self.assertIn("in 3 tasks on 3 days", flow["why"])
+            for glue in ("ls", "git status", "cat", "echo"):
+                self.assertNotIn(glue + " ", flow["why"].split(" ran in ")[0] + " ")
+            run(["-p", "t", "suggest", "apply", flow["id"], "--outside-wiki", "--name", "ship it"])
+            text = (self.repo / ".claude" / "skills" / "ship-it" / "SKILL.md").read_text(encoding="utf-8")
+        self.assertIn("disable-model-invocation: true", text)                   # it publishes: owner-only
+        for leak in ("build.py", "unittest", "npm", "gh release", "--fast", "out/app.zip"):
+            self.assertNotIn(leak, text)                                         # no command text in the file
+
+    def test_task_flows_thresholds_and_everyday_git(self):
+        flow = ["python -m pytest -q", EDIT, "python -m pytest -q tests/test_app.py", EDIT, "ruff check .",
+                "make docs"]
+        everyday = ["git add -A", "git commit -m wip", "git push"]
+        rare = ["terraform plan", "terraform apply", "kubectl rollout status deploy/web"]
+        tasks = [(d, ["python -m pytest", EDIT, "ruff check .", EDIT, "make docs"]) for d in self.days]
+        tasks += [(d, everyday) for d in self.days for _ in range(3)]
+        tasks += [(self.days[0], rare), (self.days[1], rare)]                      # 2 tasks: under the threshold
+        tasks += [(self.days[2], flow)]
+        task_transcript(self.folder, tasks)
+        whys = [w for w in self.skills() if " ran in " in w and "tasks" in w]
+        self.assertEqual(len(whys), 1, whys)
+        self.assertIn("task flow pytest → ruff check → make docs ran in 4 tasks on 3 days", whys[0])   # edits between: a flow
+        self.assertFalse(any("git" in w for w in whys))                                   # everyone's, not the project's
+        self.assertFalse(any("terraform" in w for w in whys))
+
+    def test_steps_are_named_by_what_they_run(self):
+        step = suggest_flow.step
+        self.assertEqual([step(x) for x in (
+            "python scripts/export.py --out x", "python -m unittest discover -s tests", "memcrumbs -p t scan .",
+            "python -m memcrumbs -p t index", "npm run build", "gh run watch 7", "git tag v1", 'python -c "x"')],
+            ["export.py", "unittest discover", "memcrumbs scan", "memcrumbs index", "npm run build", "gh run",
+             "git tag", ""])
+        self.assertTrue(all(suggest_flow.noise(x) for x in ("ls", "git status", "memcrumbs find", "rm", "sleep")))
 
 
 class Skills(ProjectCase):

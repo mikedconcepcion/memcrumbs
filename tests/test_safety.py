@@ -113,6 +113,20 @@ class OutputTest(ProjectCase):
         self.assertIn("find", out)
 
 
+class DailyCheckTest(ProjectCase):
+    def test_secret_like_text_reaches_the_header_without_a_check_run(self):
+        bad = self.wiki / "bad.md"
+        bad.write_text("# Bad\npass" + "word=Sup3r" + "Secret!\n", encoding="utf-8")       # split: not a secret here
+        self.assertNotIn("secret-like", run(["-p", "t", "status"])[1])        # the header never runs the lint
+        run(["-p", "t", "index"])                                              # a slow command: the daily check
+        head = run(["-p", "t", "status"])[1]
+        self.assertIn("check: 1 error (secret-like text) in wiki/bad.md — memcrumbs check", head)
+        self.assertNotIn("Sup3r", head)                                        # where, never the text
+        bad.write_text("# Bad\nthe password lives in the vault\n", encoding="utf-8")
+        run(["-p", "t", "check"])                                              # a check run refreshes it at once
+        self.assertNotIn("secret-like", run(["-p", "t", "status"])[1])
+
+
 class HeaderTest(ProjectCase):
     def setUp(self):
         super().setUp()

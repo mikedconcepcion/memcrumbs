@@ -107,7 +107,7 @@ def apply(project, s, outside_wiki=False, allow_destructive=False):
         raise SystemExit("memcrumbs: %s writes outside the wiki: add --outside-wiki after the owner's yes" % s.id)
     if getattr(s, "human", False):                     # it loosens a guard: never an agent's own decision
         from memcrumbs import review
-        review.confirm("apply %s" % s.id)
+        review.confirm("apply %s" % s.id, project, ("suggest", "apply"))
     paths = [str(Path(p)) for p, _ in s.changes]
     if len(set(p.lower() for p in paths)) != len(paths):
         raise SystemExit("memcrumbs: %s names one file twice; nothing written" % s.id)

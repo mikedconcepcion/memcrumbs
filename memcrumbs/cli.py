@@ -116,11 +116,24 @@ def _json_error(out, e):
         out.set(error=e.code.removeprefix("memcrumbs: "))
 
 
+def owner_gate(project, args):
+    """Inside Claude Code, the owner's decisions run only in the form memcrumbs' ask rules name: then Claude Code
+    asks the owner before the command runs, in every permission mode. Other agent hosts are unchanged."""
+    from memcrumbs import claude_settings as cs
+    cmd = cs.decision(args)
+    if cmd and cs.in_claude_code():
+        why = cs.owner_form(project, cmd)
+        if why:
+            raise SystemExit("memcrumbs: this is the owner's decision: %s; or the owner runs it in their own "
+                             "terminal" % why)
+
+
 def run(args, project, api):
     c = args.cmd
     out = Out(c, project, json_mode=args.json, full=args.full)
     code = 0
     try:
+        owner_gate(project, args)
         if c == "status":
             _status(out, project, api)
         elif c in ("log", "decision", "incident", "verify", "supersede"):
@@ -224,8 +237,9 @@ def run(args, project, api):
     finally:
         out.close()
     if c in SCAN_AFTER:                          # after the output: the daily scans never delay a lookup
-        from memcrumbs import suggest, update
+        from memcrumbs import lint, suggest, update
         suggest.maybe_scan(project, api)
+        lint.maybe_check(project)                # the daily secret check: its count reaches the header
         update.maybe_check(project)              # opt-in ([update] notify): at most once a day
     return code
 

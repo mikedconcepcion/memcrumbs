@@ -127,7 +127,8 @@ def detect(repo):
     """Deterministic signals from the repo's files: nothing is guessed, and nothing is read past the top level but
     file names (and the README, test and CI config files)."""
     top = [d for d in sorted(repo.iterdir()) if d.is_dir() and not d.name.startswith(".")]
-    skip = [d.name for d in top if (d / "pyvenv.cfg").exists() or d.name in GENERATED]
+    skip = [d.name for d in top if (d / "pyvenv.cfg").exists() or d.name in GENERATED or
+            d.name.endswith(".egg-info")]                                 # pip's build metadata
     exclude = ["%s/**" % n for n in skip]
     langs, dirs, md_dirs = Counter(), Counter(), set()
     md_top = False

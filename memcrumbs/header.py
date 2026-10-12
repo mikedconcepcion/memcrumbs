@@ -4,6 +4,8 @@ Sections come from wiki files only (rules, map, gotchas, journal) plus plugin se
 trees and transcripts never enter it. An over-budget section is cut with a notice naming the command that
 shows the rest, never dropped. The header reads files, not the index, so a locked or broken index only
 changes the counts line (labelled stale)."""
+import json
+
 from memcrumbs import freshness, markdown
 from memcrumbs.cmd_write import journal_tail
 from memcrumbs.plan import load_state as plan_state
@@ -29,6 +31,19 @@ LOOKUP = ('Look up before reading files: memcrumbs find "<words>" · page <name>
 
 NEW_WIKI = ("new wiki: rules and gotchas are empty. First run (skill memcrumbs): draft them from CLAUDE.md, the README "
             "and the code for the owner's review")
+
+
+def _check_line(project):
+    """One line while the last check (`check`, or the daily one) found secret-like text: pages, never the text."""
+    try:
+        st = json.loads(read_text(project.data / "check.json"))
+        n = int(st.get("errors") or 0)
+    except (OSError, ValueError, TypeError, AttributeError):
+        return ""
+    if not n:
+        return ""
+    where = ", ".join(st.get("where") or []) + (" and %d more" % st["more"] if st.get("more") else "")
+    return "check: %d error%s (secret-like text) in %s — memcrumbs check" % (n, "s" if n != 1 else "", where)
 
 
 def _new_wiki(project):
@@ -175,11 +190,14 @@ def status(out, project, api, counts=None, stale=None, unreviewed=0):
     secs = sections(project, api, cfg)
     waiting = sum(s.get("waiting", 0) for s in secs)
     if waiting or unreviewed:                 # one line, only when something waits for the owner
-        head.append("waiting for the owner's review: %s — memcrumbs review" % ", ".join(x for x in (
+        head.append("waiting for the owner's review: %s — memcrumbs review (skill: memcrumbs-review)" % ", ".join(x for x in (
             "%d new rule/gotcha line%s" % (waiting, "s" if waiting != 1 else "") if waiting else "",
             "%d agent-written page%s" % (unreviewed, "s" if unreviewed != 1 else "") if unreviewed else "") if x))
     elif _new_wiki(project):
         head.append(NEW_WIKI)
+    found = _check_line(project)                           # read from the last check, never run here
+    if found:
+        head.append(found)
     secs = [s for s in secs if s["lines"] or s["more"]]      # an empty section prints no bare title
     from memcrumbs import suggest
     nudge = suggest.header_line(project, api)              # one line, only when something is new

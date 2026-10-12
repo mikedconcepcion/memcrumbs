@@ -1,6 +1,7 @@
 """Opt-in, local reading of the host's session transcripts: `[suggest] transcripts =
 true` in memcrumbs.toml. Only shapes are kept, redacted: the first words of each shell command with its day, the
-files the agent read, and memcrumbs lookups. Nothing derived from transcripts enters the wiki, the header (beyond
+files the agent read or edited, memcrumbs lookups, and where the user's messages fall (task boundaries, no
+text). Nothing derived from transcripts enters the wiki, the header (beyond
 a count) or a shared report.
 
 Claude Code keeps one folder per working directory under ~/.claude/projects/, named by the path with every
@@ -15,10 +16,11 @@ from memcrumbs import writeset
 from memcrumbs.util import read_text
 
 WINDOW_DAYS = 30
-CACHE_VERSION = 3                 # bump when what is kept per call changes
+CACHE_VERSION = 4                 # bump when what is kept per call changes
 WORDS = 12                        # words kept per command part: enough to match a permission rule, no more
 NESTED = re.compile(r"^(powershell|pwsh|powershell\.exe|pwsh\.exe|bash|sh|cmd|cmd\.exe|ssh|plink|invoke-command)\b.*['\"]", re.I)
 SHELLS = ("Bash", "PowerShell")
+EDITS = ("Edit", "Write", "MultiEdit", "NotebookEdit")
 WRAPPER = re.compile(r"^\s*(cd\s+\S+|set-location\s+\S+|\$\w+\s*=.*|echo\b.*|export\s+\S+|source\s+\S+)\s*$", re.I)
 SPLIT = re.compile(r"&&|\|\||;|\||\n")
 HEREDOC = re.compile(r"<<-?[ \t]*(['\"]?)(\w+)\1([^\n]*)\n.*?^[ \t]*\2[ \t]*$", re.S | re.M)
@@ -109,12 +111,18 @@ def nested(command):
     return any(NESTED.match(p.strip()) for p in SPLIT.split(command or ""))
 
 
+def _said(ev, content):
+    """A message from the user (text, not a tool result): it starts a new task."""
+    return ev.get("type") == "user" and (isinstance(content, str) or isinstance(content, list) and any(
+        isinstance(b, dict) and b.get("type") == "text" for b in content))
+
+
 def _parse(path, redact, since):
     """[(day, session, kind, value)] from one transcript file."""
     out = []
     with open(path, encoding="utf-8", errors="replace") as f:
         for ln in f:
-            if '"tool_use"' not in ln:
+            if '"tool_use"' not in ln and '"user"' not in ln:
                 continue
             try:
                 ev = json.loads(ln)
@@ -126,6 +134,9 @@ def _parse(path, redact, since):
             sess = str(ev.get("sessionId") or path.stem)
             msg = ev.get("message")
             content = msg.get("content") if isinstance(msg, dict) else None
+            if _said(ev, content):
+                out.append((day, sess, "task", ""))
+                continue
             for b in content if isinstance(content, list) else []:
                 if not isinstance(b, dict) or b.get("type") != "tool_use" or not isinstance(b.get("input"), dict):
                     continue
@@ -140,6 +151,8 @@ def _parse(path, redact, since):
                         out.append((day, sess, "nested", redact(" ".join(inp["command"].split()[:40])).lower()))
                 elif name == "Read" and isinstance(inp.get("file_path"), str):
                     out.append((day, sess, "read", inp["file_path"].replace("\\", "/")))
+                elif name in EDITS:
+                    out.append((day, sess, "edit", ""))
     return out
 
 

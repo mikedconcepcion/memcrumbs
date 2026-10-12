@@ -1,9 +1,11 @@
 """`wire`: connect a repo to an agent. Dry run unless --apply; --remove takes out exactly what wire added.
 
 Targets:
-  claude  CLAUDE.md generated block · .claude/settings.json SessionStart hook · .claude/skills/memcrumbs/SKILL.md
-          (--user-skill: ~/.claude/skills instead of the repo) · with --allow: allow rules for the read-only
-          lookups (find, page, outline, sym, status) for the Bash and PowerShell tools, so they need no approval
+  claude  CLAUDE.md generated block · .claude/settings.json SessionStart hook and ask rules for the owner's
+          decisions (Claude Code asks the owner before each) · the skills memcrumbs and memcrumbs-review in
+          .claude/skills (--user-skill: ~/.claude/skills instead of the repo) · with --allow: allow rules for the
+          read-only lookups (find, page, outline, sym, status) for the Bash and PowerShell tools, so they need no
+          approval
   agents  AGENTS.md generated block (agents without hooks are told to run `memcrumbs status` first)
 
 Every edit is textual and reversible: wire, then wire --remove, gives back each file byte for byte. A file wire
@@ -23,7 +25,12 @@ TPL = Path(__file__).parent / "templates"
 OLD_SKILLS = {"sha256:833110da09379bbaf379f3964563cc7d5253feff2b1bb1fad9dc2b71a62c3485",     # 0.1.0
               "sha256:47cec81a2c823e16a4c470adf512728e4dc87be454ff0c3f5e3c3c9bd5a16632",     # 0.2.0.dev0
               "sha256:ed5ac17c5edfe1dec670ee72f62200a2ed682b1266b0b2556fb84a623e1338cd",     # 0.2.0.dev1-dev5
-              "sha256:e5b8c3db45712581e73218b350bdc96fa2c368103759356be9e64ac1bdd88fb5"}     # 0.2.0.dev6-0.3.0
+              "sha256:e5b8c3db45712581e73218b350bdc96fa2c368103759356be9e64ac1bdd88fb5",     # 0.2.0.dev6-0.3.0
+              "sha256:8cb7413b7ba4f39d2f4c78b85b35a891f6008df45b8d7dda47035db5a922873c",     # 0.4.0-0.4.2
+              "sha256:84a8a28e9a672f52ce11d4fce87358fb7172ae45a2de24a494ff27ff595674b6"}     # 0.4.3.dev0
+OLD_REVIEW_SKILLS = {"sha256:217330c6278dd0d069d268ef1dbd7510de02cc5c5833ffec2be0a319b675ef65",   # 0.4.3.dev0
+                     "sha256:d19c9bd5a52e5cd1d4daecba5fca9a111f1f6d9a1fe0e362bbdcf53ba611d2b7"}   # 0.4.3.dev0
+SKILLS = (("memcrumbs", "skill.md"), ("memcrumbs-review", "skill_review.md"))
 BLOCKS = {"claude": ("CLAUDE.md", "claude", "claude_block.md"), "agents": ("AGENTS.md", "agents", "agents_block.md")}
 hook_command = cs.hook_command                       # kept importable from here
 
@@ -35,10 +42,10 @@ def _tpl(tpl_name, **kw):
     return t
 
 
-def _change(path, new, info, what, empty=False, allow=None):
+def _change(path, new, info, what, empty=False, allow=None, ask=None):
     """new: text, bytes, None (delete) or False (report only). empty: the file holds nothing but what wire added
-    was removed; it is deleted only if wire created it. allow: the allow-rule text this change inserts."""
-    return dict(path=path, new=new, info=info, what=what, empty=empty, allow=allow)
+    was removed; it is deleted only if wire created it. allow, ask: the rule text this change inserts."""
+    return dict(path=path, new=new, info=info, what=what, empty=empty, allow=allow, ask=ask)
 
 
 def _md(project, path, block, body, remove):
@@ -52,7 +59,18 @@ def _md(project, path, block, body, remove):
     return _change(path, new, info, what, empty=remove and not new.strip())
 
 
-def _settings(project, path, remove, allow, inserted_allow):
+def _take_rules(text, what, key, inserted, rules):
+    """Take out the rules wire inserted into permissions.KEY: as inserted, else one by one (an editor reformatted
+    the list)."""
+    for entries in filter(None, (inserted, cs.allow_text(rules))):
+        out = cs.take_out(text, ("permissions", key), entries)
+        if out is not None:
+            return out, what + ["remove %s rules" % key]
+    out = cs.remove_items(text, ("permissions", key), json.loads("[%s]" % inserted) if inserted else rules)
+    return (out, what + ["remove %s rules" % key]) if out is not None else (text, what)
+
+
+def _settings(project, path, remove, allow, inserted_allow, inserted_ask=None):
     exists = path.exists()
     if remove and not exists:
         return None
@@ -63,18 +81,10 @@ def _settings(project, path, remove, allow, inserted_allow):
         if remove:
             return None
         raise SystemExit("memcrumbs: %s is %s; add this SessionStart hook by hand: %s" % (posix(path), e, cs.hook_text(project)))
-    new, what, added = text, [], None
-    if remove:                                       # undo in reverse order of insertion: allow rules, then the hook
-        for entries in filter(None, (inserted_allow, cs.allow_text(cs.allow_rules(project)))):
-            out = cs.take_out(new, ("permissions", "allow"), entries)
-            if out is not None:
-                new, what = out, what + ["remove allow rules"]
-                break
-        else:                                        # reformatted by an editor: take out our rules one by one
-            rules = json.loads("[%s]" % inserted_allow) if inserted_allow else cs.allow_rules(project)
-            out = cs.remove_items(new, ("permissions", "allow"), rules)
-            if out is not None:
-                new, what = out, what + ["remove allow rules"]
+    new, what, added, asked = text, [], None, None
+    if remove:                                       # undo in reverse order of insertion: ask, allow, the hook
+        new, what = _take_rules(new, what, "ask", inserted_ask, cs.ask_rules(project))
+        new, what = _take_rules(new, what, "allow", inserted_allow, cs.allow_rules(project))
         if cs.has_hook(data):
             out = cs.take_out(new, ("hooks", "SessionStart"), cs.hook_text(project))
             out = out if out is not None else cs.canonical_remove_hook(new, check_object(new))
@@ -92,13 +102,19 @@ def _settings(project, path, remove, allow, inserted_allow):
                 "allow %d read-only lookup rules (%s; Bash and PowerShell)" % (len(missing), ", ".join(cs.READ_ONLY))]
         elif missing:
             what.append("note: lookups will ask for approval each time — add --allow")
+        asks = cs.missing_ask(data, project)
+        if asks:
+            asked = cs.allow_text(asks)
+            new, what = cs.insert(new, ("permissions", "ask"), asked), what + [
+                "ask the owner before %s (%d ask rules; Bash and PowerShell)" % (
+                    ", ".join(" ".join(c) for c in cs.OWNER), len(asks))]
     if new == text:
         return _change(path, False, info, what[0]) if what else None
     try:
         check_object(new)                            # never write a settings file Claude Code cannot read
     except JsonEditError as e:
         raise SystemExit("memcrumbs: editing %s would leave invalid JSON (%s); nothing written" % (posix(path), e))
-    return _change(path, new, info, "; ".join(what), empty=remove and new.strip() == "{}", allow=added)
+    return _change(path, new, info, "; ".join(what), empty=remove and new.strip() == "{}", allow=added, ask=asked)
 
 
 def lf(data):
@@ -109,11 +125,12 @@ def skill_hash(data):
     return "sha256:" + hashlib.sha256(lf(data)).hexdigest()
 
 
-def _skill(path, remove):
-    ours = lf((TPL / "skill.md").read_bytes())
+def _skill(path, remove, tpl="skill.md"):
+    old = OLD_SKILLS if tpl == "skill.md" else OLD_REVIEW_SKILLS
+    ours = lf((TPL / tpl).read_bytes())
     have = path.read_bytes() if path.exists() else None
     same = have is not None and lf(have) == ours                 # the same text, whatever its line endings
-    older = have is not None and skill_hash(have) in OLD_SKILLS
+    older = have is not None and skill_hash(have) in old
     if remove:
         return _change(path, None, None, "remove skill") if same or older else None
     if have is None:
@@ -127,16 +144,18 @@ def _skill(path, remove):
 
 def plan(project, repo, targets=("claude",), remove=False, user_skill=False, allow=False, state=None):
     changes = []
-    inserted = ((state or {}).get("allow") or {})
+    inserted, asked = ((state or {}).get("allow") or {}), ((state or {}).get("ask") or {})
     for t in targets:
         fname, block, tpl = BLOCKS[t]
         body = _tpl(tpl, name=project.name, wiki=posix(project.wiki)).strip()
         changes.append(_md(project, repo / fname, block, body, remove))
         if t == "claude":
             sp = repo / ".claude" / "settings.json"
-            changes.append(_settings(project, sp, remove, allow, inserted.get(posix(sp.resolve()))))
+            key = posix(sp.resolve())
+            changes.append(_settings(project, sp, remove, allow, inserted.get(key), asked.get(key)))
             base = Path.home() / ".claude" if user_skill else repo / ".claude"
-            changes.append(_skill(base / "skills" / "memcrumbs" / "SKILL.md", remove))
+            for name, tpl in SKILLS:
+                changes.append(_skill(base / "skills" / name / "SKILL.md", remove, tpl))
     return [c for c in changes if c]
 
 
@@ -160,6 +179,7 @@ def wire(out, project, repo=None, targets=("claude",), apply=False, remove=False
     out.set(repo=posix(repo), apply=apply, remove=remove, changes=[dict(path=posix(c["path"]), what=c["what"]) for c in changes])
     created = set((state or {}).get("created", []))
     inserted = dict((state or {}).get("allow") or {})
+    asked = dict((state or {}).get("ask") or {})
     if not changes:
         out("nothing to %s in %s" % ("remove" if remove else "change", posix(repo)))
     for c in changes:
@@ -168,7 +188,7 @@ def wire(out, project, repo=None, targets=("claude",), apply=False, remove=False
         if changes:
             out("(dry run — add --apply)" if not apply else "nothing to apply.")
         if apply and state is not None and state.get("version") != __version__:
-            _record(project, state_path, created, inserted)          # this version has checked the wiring
+            _record(project, state_path, created, inserted, asked)   # this version has checked the wiring
         return
     extra = [c["path"] for c in changes]
     try:
@@ -182,8 +202,9 @@ def wire(out, project, repo=None, targets=("claude",), apply=False, remove=False
                 writeset.delete(project, path, extra)
                 created.discard(key)
                 inserted.pop(key, None)
+                asked.pop(key, None)
                 for d in (path.parent, path.parent.parent, path.parent.parent.parent):
-                    if d.name in ("memcrumbs", "skills", ".claude") and d.is_dir() and not any(d.iterdir()):
+                    if d.name in {s[0] for s in SKILLS} | {"skills", ".claude"} and d.is_dir() and not any(d.iterdir()):
                         d.rmdir()
                 continue
             fresh = not path.exists()
@@ -193,17 +214,18 @@ def wire(out, project, repo=None, targets=("claude",), apply=False, remove=False
                 writeset.write_text(project, path, new, c["info"], extra)
             if fresh:
                 created.add(key)
-            if c["allow"]:
-                inserted[key] = c["allow"]
-            elif remove:
-                inserted.pop(key, None)
+            for rec, field in ((inserted, "allow"), (asked, "ask")):
+                if c[field]:
+                    rec[key] = c[field]
+                elif remove:
+                    rec.pop(key, None)
     finally:                                         # a failed write still leaves a record of what was done
-        _record(project, state_path, created, inserted)
+        _record(project, state_path, created, inserted, asked)
     out("applied.")
 
 
-def _record(project, state_path, created, inserted):
+def _record(project, state_path, created, inserted, asked=None):
     """`version` is the memcrumbs that last applied the wiring: `update` and the header use it to tell whether an
     upgrade made by hand (pip, git) still has its index and wiring steps to run."""
     writeset.write_text(project, state_path, json.dumps({"created": sorted(created), "allow": inserted,
-                                                         "version": __version__}, indent=1) + "\n")
+                                                         "ask": asked or {}, "version": __version__}, indent=1) + "\n")

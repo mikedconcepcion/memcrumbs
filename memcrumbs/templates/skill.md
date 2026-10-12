@@ -21,7 +21,8 @@ description: Look up project knowledge (rules, runbooks, gotchas, decisions, inc
 | Refresh pages the user approved | `memcrumbs plan next` → update that page from what changed → `memcrumbs verify <page>`; repeat |
 | A lookup missed | `memcrumbs bench --add "<the question>" --expect <page that answers it>` |
 | The owner corrected how you work | offer to keep it as a rule; on a yes: `memcrumbs rule "<the rule>"` (it reaches the header after the owner's review) |
-| The header says there are new suggestions | `memcrumbs suggest` → show the owner the evidence → `suggest apply ID` only after a yes (`--outside-wiki` when it writes outside the wiki) · `suggest dismiss ID --for 14d` or `--never` |
+| The header says lines or pages wait for the owner's review | the memcrumbs-review skill: show the owner each item; they approve here, and Claude Code asks them before each approval runs |
+| The header says there are new suggestions | tell the owner in one line (how many; skill offers come from work that repeated); list them only if they say so, since listing them costs tokens. Then the memcrumbs-review skill |
 | Lint after editing pages | `memcrumbs check` |
 | Session header again | `memcrumbs status` |
 
@@ -52,7 +53,7 @@ session, read the last journal lines (`memcrumbs status`) before going on.
 - write up to 8 rules in `rules.md` `## Top` (what needs the owner's approval, what is never done) and up to 8
   gotchas in `gotchas.md` `## Top`, one line each, only what those files support: never invent a rule;
 - fill `What it is` in `index.md` `## Map` if it shows `…`;
-- tell the owner the lines wait for their review: `memcrumbs review` lists them and how to approve.
+- then take the owner through them here with the memcrumbs-review skill: they approve in this session.
 
 **Writing the wiki** (pages are markdown under the project's `wiki/`):
 - One topic per page, under 300 lines, frontmatter `title / summary / verified / tags / sources` (+ `status`, `aliases`).
@@ -61,6 +62,6 @@ session, read the last journal lines (`memcrumbs status`) before going on.
 - Gotchas go in `gotchas.md` `## Top` (one line, most expensive first, link the detail page); standing rules in `rules.md` `## Top`.
 - A current value (version, port, host) lives once in `facts.md` (`| key | value | about | source | verified |`); elsewhere write `{{fact:key}}`.
 - Never write secret values (passwords, keys, tokens) — write *where* they live. `memcrumbs check` flags secret-looking text.
-- New rules and gotchas reach the session header after the owner runs `memcrumbs review`. Never approve a review
-  yourself; `memcrumbs quarantine <page>` takes a suspicious page out of the index until the owner looks.
+- New rules and gotchas reach the session header after the owner approves them (the memcrumbs-review skill). Never
+  approve for the owner; `memcrumbs quarantine <page>` takes a suspicious page out of the index until the owner looks.
 - Blocks between `<!-- memcrumbs:gen NAME -->` and `<!-- memcrumbs:end -->` are machine-written — don't edit by hand.

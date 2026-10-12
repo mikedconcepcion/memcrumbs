@@ -3,6 +3,41 @@
 What changed for users, newest first. Versions follow [semver](https://semver.org/) from 1.0; before 1.0 the
 command line and config may still change, and every such change is listed here.
 
+## [0.5.0] — 2026-10-12
+
+### Added
+
+- **Approve in the Claude Code session: `/memcrumbs-review`.** You no longer open a second terminal to approve the
+  rules and gotchas the agent drafted.
+  - The new memcrumbs-review skill shows you each item in full, asks, then runs the approval.
+  - Claude Code asks you before the approval runs, in every permission mode, and that answer is the approval.
+  - It also takes you through suggestions, quarantined pages and the refresh budget.
+- **`wire` and `init` add ask rules for your decisions:** `review --approve`, `quarantine --lift`, `suggest apply`
+  and `undo`, `plan --approve`, `init --remove`.
+  - Inside Claude Code, memcrumbs runs these only in the form the rules name (`memcrumbs review --approve …`), so
+    the prompt cannot be skipped by writing them another way.
+  - Other agent shells are still refused, and at a terminal you still type the code.
+- **The secret check runs by itself.** `check` runs once a day after a slow command, and the session header names
+  any page that holds secret-like text (never the text).
+- **Skill offers from the work you repeat.** memcrumbs finds task flows and pipelines in Claude Code's
+  transcripts: the same steps in the same order in 3 tasks on 2 days, or in 6 tasks.
+  - Steps are named by what they run (`build.py`, `unittest discover`, `git tag`, `npm run build`).
+  - A pipeline (no edits between its steps) could be a script; a task flow becomes a skill's checklist.
+  - The check runs once a day by itself. The header pings with a count, and the agent lists the offers only when
+    you say so, since listing costs tokens.
+  - `init`'s wiring question now also asks to turn this on: the transcripts are read locally, and
+    `init --remove` turns it off again.
+
+### Changed
+
+- `quarantine --lift` is written `memcrumbs quarantine --lift <page>`. `memcrumbs review` also lists quarantined
+  pages.
+
+### Fixed
+
+- The map that `init` drafts no longer lists pip's `*.egg-info` folders, and they are left out of the index like a
+  virtual environment.
+
 ## [0.4.2] — 2026-10-12
 
 ### Fixed

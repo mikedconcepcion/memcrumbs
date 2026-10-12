@@ -140,7 +140,8 @@ def wired(project):
     from memcrumbs.wire import BLOCKS, _state
     st, _ = _state(project)
     candidates = {Path(r) for r in project.repos}
-    for f in (st or {}).get("created", []) + list(((st or {}).get("allow") or {}).keys()):
+    for f in (st or {}).get("created", []) + list(((st or {}).get("allow") or {}).keys()) + \
+            list(((st or {}).get("ask") or {}).keys()):
         p = Path(f)
         candidates.add(p.parent.parent if p.parent.name == ".claude" else
                        p.parents[3] if p.name == "SKILL.md" and len(p.parents) > 3 else p.parent)

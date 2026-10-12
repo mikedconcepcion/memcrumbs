@@ -16,6 +16,7 @@ REPO = {"README.md": "# Kiln App\n\n[![ci](b.svg)](x)\n\nKiln App schedules firi
         "pyproject.toml": "[tool.pytest.ini_options]\n",
         ".github/workflows/ci.yml": "on: push\n",
         "env/pyvenv.cfg": "home = x\n", "env/lib/site.py": "x = 1\n",
+        "kiln.egg-info/PKG-INFO": "Name: kiln\n", "kiln.egg-info/SOURCES.txt": "src/kiln/fire.py\n",
         "CLAUDE.md": "# Kiln\r\nhand notes\r\n"}
 
 
@@ -47,9 +48,15 @@ class Init(ProjectCase):
         self.assertLessEqual(len(lines), 8, out)
         self.assertTrue(lines[0].startswith("created kiln-app: wiki"), out)
         self.assertIn("wire: not applied. Ask the owner, then run memcrumbs init --yes", out)   # no terminal: no yes
+        self.assertIn("turns on skill offers from repeated work", out)                    # asked with the wiring
         self.assertTrue(lines[-1].startswith("next: memcrumbs init --yes"), out)
         self.assertEqual(files(self.app), before)          # the repo is untouched without the owner's yes
+        cfg = proj.resolve("kiln-app").dir / "memcrumbs.toml"
+        config = cfg.read_bytes()
+        self.assertNotIn(b"transcripts = true", config)
         out = run(["init", "--yes"])[1]
+        self.assertIn("skill offers from repeated work: on", out)
+        self.assertTrue(proj.resolve("kiln-app").cfg["suggest"]["transcripts"])
         self.assertIn("already set up: kiln-app", out)
         self.assertIn("wire: wrote CLAUDE.md, .claude/settings.json, .claude/skills/memcrumbs/SKILL.md", out)
         self.assertIn("next: start Claude Code here", out)
@@ -62,13 +69,27 @@ class Init(ProjectCase):
         out = run(["init", "--remove"])[1]
         self.assertIn("unwired: %s" % self.app.resolve().as_posix(), out)
         self.assertEqual(files(self.app), before)          # every byte back, CRLF and all
+        self.assertEqual(cfg.read_bytes(), config)         # the offers are off again, byte for byte
         self.assertTrue((p.dir / "memcrumbs.toml").exists())                    # the wiki is kept
+
+    def test_the_owners_own_transcripts_setting_is_kept(self):
+        run(["init"])
+        cfg = proj.resolve("kiln-app").dir / "memcrumbs.toml"
+        cfg.write_text(cfg.read_text(encoding="utf-8") + "\n[suggest]\ntranscripts = false\n", encoding="utf-8")
+        mine = cfg.read_bytes()
+        out = run(["init", "--yes"])[1]
+        self.assertNotIn("skill offers", out)
+        self.assertEqual(cfg.read_bytes(), mine)
+        run(["init", "--remove"])
+        self.assertEqual(cfg.read_bytes(), mine)
 
     def test_what_it_found_and_the_header_of_a_new_wiki(self):
         run(["init", "--no-wire"])
         p = proj.resolve("kiln-app")
         self.assertEqual(p.title, "Kiln App")
         self.assertIn("env/**", p.cfg["code"]["exclude"])                     # a virtual environment is skipped
+        self.assertIn("kiln.egg-info/**", p.cfg["code"]["exclude"])            # and pip's build metadata
+        self.assertNotIn("kiln.egg-info", (p.wiki / "index.md").read_text(encoding="utf-8"))
         self.assertEqual(p.cfg["docs"][0]["include"], ["*.md", "docs/**/*.md"])
         index = (p.wiki / "index.md").read_text(encoding="utf-8")
         for want in ("- What it is: Kiln App schedules firing runs for a pottery studio.",

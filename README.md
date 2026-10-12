@@ -27,9 +27,10 @@ memcrumbs gives each project a memory that stays small, current and safe.
 - **It keeps one current value per fact.** Versions, ports and hosts live in one table, optionally read straight
   from the source file, and `check` flags pages that still state an old value.
 - **It notices things for you, and asks first.** `memcrumbs suggest` offers near-duplicate pages to merge,
-  questions the wiki could not answer, gotchas that can become permission prompts, repeated command sequences
-  that could become a skill, and auto-memory notes the wiki already holds. Nothing changes until you say yes,
-  and every change can be undone byte for byte.
+  questions the wiki could not answer, gotchas that can become permission prompts, task flows and pipelines you
+  keep repeating that could become a skill, and auto-memory notes the wiki already holds. Once a day the header
+  pings with a count; the offers are listed only when you ask. Nothing changes until you say yes, and every
+  change can be undone byte for byte.
 - **Your secrets stay out.** Everything indexed, printed or written is redacted; `.env` files and keys are never
   indexed; `memcrumbs scan` checks a folder or a package before you publish it.
 - **You stay in control of token spend.** Re-indexing is free and local. Rewriting stale pages is agent work, so
@@ -83,12 +84,14 @@ cd /code/myapp && memcrumbs init
 
 `init` names the project after the repo, writes a starter wiki with a map drafted from the repo (README,
 languages, folders, tests, CI), indexes the code and the repo's markdown, and checks the result. It asks once
-before it wires Claude Code (a CLAUDE.md block, a session-start hook, read-only allow rules and a skill).
+before it wires Claude Code (a CLAUDE.md block, a session-start hook, read-only allow rules, a rule that makes
+Claude Code ask you before each of your decisions, and two skills).
 Running it again repairs and upgrades; `memcrumbs init --remove` takes the wiring out again, byte for byte.
 
 From then on, every Claude Code session in that repo starts with the header, and the agent looks things up with
 `memcrumbs find`. In the first session the agent drafts your rules and gotchas from CLAUDE.md, the README and the
-code; they reach the header once you approve them with `memcrumbs review`. Inside the repo (or the project
+code; they reach the header once you approve them. Type `/memcrumbs-review` in Claude Code: the agent shows you
+each line, and Claude Code asks you before the approval runs. Inside the repo (or the project
 folder) `-p` can be left out. Write the wiki as you go:
 
 ```bash

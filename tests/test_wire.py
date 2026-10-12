@@ -70,9 +70,14 @@ class WireRoundTrip(unittest.TestCase):
                 rules = (settings.get("permissions") or {}).get("allow") or []
                 self.assertEqual("PowerShell(memcrumbs -p t find:*)" in rules, allow)
                 self.assertFalse(any(" log" in r or " verify" in r or " wire" in r for r in rules))
+                asks = settings["permissions"]["ask"]                         # always: the owner's decisions
+                self.assertIn("Bash(memcrumbs review --approve:*)", asks)
+                self.assertIn("PowerShell(memcrumbs -p t suggest apply:*)", asks)
+                self.assertFalse(set(asks) & set(rules))
                 self.assertIn(b"memcrumbs:gen claude", wired["CLAUDE.md"])
                 self.assertEqual(set(wired) - set(before) - {"CLAUDE.md", "AGENTS.md", ".claude/settings.json",
-                                                             ".claude/skills/memcrumbs/SKILL.md"}, set())
+                                                             ".claude/skills/memcrumbs/SKILL.md",
+                                                             ".claude/skills/memcrumbs-review/SKILL.md"}, set())
                 self.run_wire(repo, targets=targets, allow=allow)             # idempotent
                 self.assertEqual(snapshot(repo), wired)
                 self.run_wire(repo, targets=targets, remove=True)
@@ -92,6 +97,29 @@ class WireRoundTrip(unittest.TestCase):
         self.assertIn("Bash(ls:*)", rules)
         self.run_wire(repo, remove=True)
         self.assertEqual((repo / ".claude" / "settings.json").read_bytes(), original)
+
+    def test_wiring_from_before_the_ask_rules_is_completed_and_still_removed_exactly(self):
+        """A repo wired by a version without the ask rules and the review skill: the next wire adds them, and
+        --remove still gives back every file byte for byte."""
+        from memcrumbs import claude_settings as cs
+        for (sname, sbytes), allow in itertools.product(SETTINGS.items(), (False, True)):
+            with self.subTest(settings=sname, allow=allow):
+                repo = self.root / ("older-%s-%d" % (sname, allow))
+                repo.mkdir()
+                if sbytes is not None:
+                    (repo / ".claude").mkdir()
+                    (repo / ".claude" / "settings.json").write_bytes(sbytes)
+                before = snapshot(repo)
+                with mock.patch.object(cs, "OWNER", ()), mock.patch.object(wire, "SKILLS", wire.SKILLS[:1]):
+                    self.run_wire(repo, allow=allow)                   # as the older version wired it
+                older = snapshot(repo)
+                self.assertNotIn(".claude/skills/memcrumbs-review/SKILL.md", older)
+                self.run_wire(repo, allow=allow)                       # the upgrade's wire adds the rest
+                settings = json.loads((repo / ".claude" / "settings.json").read_text(encoding="utf-8"))
+                self.assertIn("Bash(memcrumbs review --approve:*)", settings["permissions"]["ask"])
+                self.assertIn(".claude/skills/memcrumbs-review/SKILL.md", snapshot(repo))
+                self.run_wire(repo, remove=True)
+                self.assertEqual(snapshot(repo), before)
 
     def test_refuses_what_it_cannot_reverse(self):
         repo = self.root / "jsonc"
@@ -121,7 +149,7 @@ class WireRoundTrip(unittest.TestCase):
         skill.write_bytes(ours.replace(b"\n", b"\r\n"))
 
         def skill_change():
-            return [c["what"] for c in wire.plan(self.project, repo) if c["path"].name == "SKILL.md"]
+            return [c["what"] for c in wire.plan(self.project, repo) if c["path"] == skill]
         self.assertEqual(skill_change(), [])                                    # nothing to do
         with mock.patch.object(wire, "OLD_SKILLS", {wire.skill_hash(b"an older skill\n")}):
             skill.write_bytes(b"an older skill\r\n")                            # an older version's text, CRLF

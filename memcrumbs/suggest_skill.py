@@ -231,10 +231,38 @@ def _runbook(project, words):
     return Path(hits[0]["path"]).stem if hits else None
 
 
-def _skills(project, cheap_only=False):
+def _flows(project, evs, sequences_offered, used):
+    """Task flows and pipelines (suggest_flow), unless a sequence offer already covers the flow's own steps."""
+    from memcrumbs import suggest_flow as sf
+    covered = [set(s.key[4:].split(" > ")) for s in sequences_offered]
     out = []
-    if not cheap_only:
-        evs = transcripts.events(project)
+    for f in sf.flows(evs)[:sf.TOP]:
+        steps, what = f["steps"], "pipeline" if f["pipeline"] else "task flow"
+        if any(f["own"] <= c for c in covered):
+            continue
+        book = _runbook(project, " ".join(steps))
+        name = slug(book) if book and slug(book) not in used else "flow-" + _short("flow:" + " > ".join(steps))
+        used.add(name)
+        title = ("Run the %s runbook" % book.replace("-", " ")) if book else "A repeated %s" % what
+        more = " (and %d variant(s))" % (f["forms"] - 1) if f["forms"] > 1 else ""
+        s = _skill(project, "skill", "flow:" + " > ".join(steps), "the %s %s ran in %d tasks on %d day%s%s" % (
+                   what, " → ".join(steps), f["tasks"], f["days"], "s" if f["days"] != 1 else "", more),
+                   "scaffold the skill %s: %s" % (name, "a script would do, or a skill that runs it" if f["pipeline"]
+                                                  else "its steps as a checklist"),
+                   "%d tasks on %d day(s), in %d form(s)" % (f["tasks"], f["days"], f["forms"]), name, title,
+                   [book] if book else [], bool(LIVE.search(" ".join(steps))), f["tasks"] * f["days"] * len(steps),
+                   cheap=True)
+        if s:
+            out.append(s)
+    return out
+
+
+def _skills(project, cheap_only=False):
+    """Skill offers. The transcript scans run in the daily scan too: parsing is cached per file and the mining is
+    fast, so an offer pings the header once usage passes a threshold; the owner decides whether to look."""
+    out = []
+    evs = transcripts.events(project)                  # [] unless transcripts are opted in
+    if evs:
         used = set()
         for gram, (runs, sess, days, forms, steps) in sorted(sequences(evs).items(),
                                                              key=lambda kv: -kv[1][0] * kv[1][2]):
@@ -248,7 +276,7 @@ def _skills(project, cheap_only=False):
             s = _skill(project, "skill", "seq:" + " > ".join(gram), "the sequence %s ran %d times in %d sessions on %d "
                        "days%s" % (" → ".join(gram), runs, sess, days, more), "scaffold the skill %s" % name,
                        "%d runs in %d sessions on %d days, in %d form(s)" % (runs, sess, days, forms), name, title,
-                       [book] if book else [], bool(LIVE.search(" ".join(steps))), runs * days)
+                       [book] if book else [], bool(LIVE.search(" ".join(steps))), runs * days, cheap=True)
             if s:
                 out.append(s)
         for h, (runs, days) in sorted(statuses(evs).items(), key=lambda kv: -kv[1][0] * kv[1][1]):
@@ -256,9 +284,10 @@ def _skills(project, cheap_only=False):
             s = _skill(project, "skill", "status:" + h, "a status query (%s) ran %d times on %d days" % (h, runs, days),
                        "scaffold a status skill %s (a script or skill beats repeating it; a schedule is up to you)"
                        % name, "%d runs on %d days" % (runs, days), name, "A repeated status check", [], False,
-                       runs * days)
+                       runs * days, cheap=True)
             if s:
                 out.append(s)
+        out += _flows(project, evs, [s for s in out if s.key.startswith("seq:")], used)
     from memcrumbs import plan
     reads = plan.hits(project)
     for p in project.wiki_pages():
@@ -335,7 +364,8 @@ def add_rule(out, project, text):
     new = _add_rule(old, line)
     writeset.write_text(project, p, new, info)
     out.set(path=project.rel(p), line=line)
-    out("added to %s ## Top; it reaches the session header after the owner's review (memcrumbs review)" % project.rel(p))
+    out("added to %s ## Top; it reaches the session header after the owner's review (skill: memcrumbs-review)"
+        % project.rel(p))
     from memcrumbs.util import split_lines
     body = split_lines(markdown.frontmatter(new)[1])
     span = markdown.section_span(body, "Top")

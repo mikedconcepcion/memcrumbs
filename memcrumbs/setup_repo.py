@@ -19,9 +19,12 @@ import sys
 import time
 from pathlib import Path
 
-from memcrumbs import cmd_setup, indexer, plugins, project as proj, repo_signals as signals
+from memcrumbs import cmd_setup, indexer, plugins, project as proj, repo_signals as signals, writeset
 from memcrumbs.redact import safe
-from memcrumbs.util import posix
+from memcrumbs.util import newline_of, posix, read_doc
+
+OFFERS = ("[suggest]                        # turned on with the wiring: skill offers from repeated work (Claude "
+          "Code's transcripts, read locally)\ntranscripts = true\n")
 
 
 class Collect:
@@ -138,6 +141,22 @@ def _rel(path, repo):
         return posix(path)
 
 
+def _offers(project, on):
+    """Turn skill offers from repeated work on (appending OFFERS) or off (taking out exactly that text). The
+    owner's own `[suggest] transcripts` setting is never touched."""
+    p = project.dir / "memcrumbs.toml"
+    text, info = read_doc(p)
+    nl = newline_of(text)
+    block = nl + OFFERS.replace("\n", nl)
+    if on and "transcripts" not in (project.cfg.get("suggest") or {}):
+        writeset.write_text(project, p, text + ("" if text.endswith(nl) else nl) + block, info, extra=[p])
+        return True
+    if not on and text.endswith(block):
+        writeset.write_text(project, p, text[:-len(block)], info, extra=[p])
+        return True
+    return False
+
+
 def _wire(out, project, repo, args):
     from memcrumbs import update, wire
     if args.no_wire:
@@ -149,13 +168,19 @@ def _wire(out, project, repo, args):
     todo = [c for c in plan if c["new"] is not False]
     kept = ["kept %s: %s" % (_rel(c["path"], repo), c["what"]) for c in plan if c["new"] is False]
     names = ", ".join(_rel(c["path"], repo) for c in todo)
+    offers = entry is None and "transcripts" not in (project.cfg.get("suggest") or {})
+    also = ("; and it turns on skill offers from repeated work (Claude Code's transcripts, read locally; memcrumbs.toml "
+            "[suggest] transcripts)" if offers else "")
     if entry is None:                                # a first wiring: the owner's yes, once
         if not args.yes and not _interactive(out):
-            out("wire: not applied. Ask the owner, then run memcrumbs init --yes. It changes %s" % names)
+            out("wire: not applied. Ask the owner, then run memcrumbs init --yes. It changes %s%s" % (names, also))
             return None
         if not args.yes:
             for c in todo:
                 out("  %s: %s" % (_rel(c["path"], repo), c["what"]))
+            if offers:
+                out("  memcrumbs.toml: skill offers from repeated work (task flows, pipelines): Claude Code's "
+                    "transcripts, read locally; nothing leaves this machine")
             if not _ask(out, "Wire Claude Code?", True):
                 out("wire: not applied (run memcrumbs init again to wire)")
                 return None
@@ -163,6 +188,8 @@ def _wire(out, project, repo, args):
     wire.wire(c, project, repo, targets, apply=True, user_skill=user_skill, allow=allow)
     said = ("wire: Claude Code is wired and current" if not todo else
             "wire: %s %s (undo: memcrumbs init --remove)" % ("updated" if entry else "wrote", names))
+    if offers and _offers(project, True):
+        said += "; skill offers from repeated work: on"
     out("; ".join([said] + kept))
     return "again" if entry else "first"
 
@@ -182,7 +209,7 @@ def _next(wired, fails):
         return "next: memcrumbs init --yes wires Claude Code"
     if wired == "first":
         return ("next: start Claude Code here. The header says the wiki is new: the agent drafts rules and gotchas, "
-                "and you approve them with memcrumbs review")
+                "and you approve them in the session: /memcrumbs-review")
     return "next: nothing to do"
 
 
@@ -194,7 +221,9 @@ def remove(out, args):
         repos = _repos(args)
         project = proj._by_path(proj.all_projects(), repos[0]) if repos else None
     if project is None:
-        raise SystemExit("memcrumbs: no project is set up here; pass its name: memcrumbs init NAME --remove")
+        raise SystemExit("memcrumbs: no project is set up here; pass its name: memcrumbs init --remove NAME")
+    from memcrumbs.cli import owner_gate
+    owner_gate(project, args)
     if args.delete_wiki and not args.yes and not _interactive(out):        # refused before anything changes
         raise SystemExit("memcrumbs: --delete-wiki deletes %s (%d wiki pages, the index, the config). Ask the owner, "
                          "then add --yes" % (posix(project.dir), len(project.wiki_pages())))
@@ -202,6 +231,8 @@ def remove(out, args):
     for repo, targets, _allow, user_skill in update.wired(project):
         wire.wire(Collect(), project, repo, targets, apply=True, remove=True, user_skill=user_skill)
         done.append(posix(repo))
+    if _offers(project, False):
+        done.append("skill offers from repeated work (off)")
     out("unwired: %s" % (", ".join(done) if done else "nothing was wired"))
     out.set(project=project.name, unwired=done, deleted=False)
     if not args.delete_wiki:

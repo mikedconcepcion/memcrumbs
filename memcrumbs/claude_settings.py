@@ -1,16 +1,26 @@
-"""`.claude/settings.json` edits for `wire`: the SessionStart hook, and allow rules for the read-only lookups.
+"""`.claude/settings.json` edits for `wire`: the SessionStart hook, allow rules for the read-only lookups, and ask
+rules for the owner's decisions.
+
+An ask rule makes Claude Code ask the owner before the command runs, in every permission mode (bypass included),
+and no allow rule silences it. So the owner can approve inside the session: their answer to that prompt is the
+approval. memcrumbs accepts an owner's decision inside Claude Code only in the form the rules name (`owner_form`).
 
 Each edit is one textual insertion right after an opening brace or bracket (jsonedit.py), so `--remove` takes
 out exactly the inserted text and every other byte stays as it was. A hook written by memcrumbs 0.1 (whole file
 re-serialized by json.dumps) is removed at the JSON level when the file is still in that exact format."""
 import json
+import os
+import sys
+from pathlib import Path
 
 from memcrumbs import jsonedit
 from memcrumbs.jsonedit import JsonEditError
-from memcrumbs.util import newline_of
+from memcrumbs.util import newline_of, read_text
 
 READ_ONLY = ("find", "page", "outline", "sym", "status", "about", "fact")   # never log/decision/incident/verify/plan
 SHELLS = ("Bash", "PowerShell")                              # Claude Code on Windows runs commands via PowerShell
+OWNER = (("review", "--approve"), ("quarantine", "--lift"), ("suggest", "apply"), ("suggest", "undo"),
+         ("plan", "--approve"), ("init", "--remove"))        # the owner's decisions: Claude Code asks before each
 
 
 def hook_command(project):
@@ -27,6 +37,59 @@ def allow_rules(project):
             for cmd in READ_ONLY]
 
 
+def ask_rules(project):
+    """Ask rules for the owner's decisions, with and without `-p NAME`, for both shell tools."""
+    return ["%s(memcrumbs %s%s:*)" % (sh, pre, " ".join(cmd)) for sh in SHELLS for pre in ("", "-p %s " % project.name)
+            for cmd in OWNER]
+
+
+def decision(args):
+    """The owner's decision this command makes, as its OWNER entry, or None."""
+    c = getattr(args, "cmd", None)
+    if c in ("review", "plan") and getattr(args, "approve", None):
+        return c, "--approve"
+    if c == "quarantine" and getattr(args, "lift", False):
+        return "quarantine", "--lift"
+    if c == "suggest" and getattr(args, "action", None) in ("apply", "undo"):
+        return "suggest", args.action
+    if c == "init" and getattr(args, "remove", False):
+        return "init", "--remove"
+    return None
+
+
+def owner_form(project, cmd, argv=None):
+    """None when Claude Code asks the owner before this command; otherwise what is missing. It must run as the
+    `memcrumbs` command, in the form the ask rules name (`memcrumbs [-p NAME] review --approve …`), with the rules in
+    the settings Claude Code reads for this repo or for the user. Any other form would run without the prompt."""
+    argv = sys.argv if argv is None else argv
+    form = "memcrumbs %s …" % " ".join(cmd)
+    if Path(argv[0]).stem.lower() != "memcrumbs":
+        return "run it as the memcrumbs command: %s" % form
+    args, pre = list(argv[1:]), ""
+    if args[:1] == ["-p"] and len(args) > 2 and project is not None and args[1] == project.name:
+        args, pre = args[2:], "-p %s " % project.name
+    if tuple(args[:len(cmd)]) != tuple(cmd):
+        return "write it in the form Claude Code asks about: %s" % form
+    want = {"%s(memcrumbs %s%s:*)" % (sh, pre, " ".join(cmd)) for sh in SHELLS}
+    have = set()
+    from memcrumbs.repo_signals import git_root
+    root = git_root(Path.cwd()) or Path.cwd()
+    for f in (root / ".claude" / "settings.json", root / ".claude" / "settings.local.json",
+              Path.home() / ".claude" / "settings.json"):
+        try:
+            have |= _rules(json.loads(read_text(f)), "ask") if f.exists() else set()
+        except (OSError, ValueError, AttributeError):
+            continue
+    have |= {r[:-3] + ":*)" for r in have if r.endswith(" *)")}     # `Bash(x *)` means the same as `Bash(x:*)`
+    if not want <= have:
+        return "Claude Code has no rule to ask the owner before `%s` here (memcrumbs init in the repo adds it)" % form
+    return None
+
+
+def in_claude_code():
+    return "CLAUDECODE" in os.environ
+
+
 def ours(cmd):
     return isinstance(cmd, str) and cmd.startswith("memcrumbs ") and " status" in cmd
 
@@ -37,10 +100,20 @@ def has_hook(data):
                for h in e.get("hooks") or [] if isinstance(h, dict))
 
 
-def missing_allow(data, project):
+def _rules(data, key):
     perms = data.get("permissions") if isinstance(data.get("permissions"), dict) else {}
-    have = set(perms.get("allow") or [])
+    have = perms.get(key)
+    return {r for r in have if isinstance(r, str)} if isinstance(have, list) else set()
+
+
+def missing_allow(data, project):
+    have = _rules(data, "allow")
     return [r for r in allow_rules(project) if r not in have]
+
+
+def missing_ask(data, project):
+    have = _rules(data, "ask")
+    return [r for r in ask_rules(project) if r not in have]
 
 
 def _snippets(keys, entries):

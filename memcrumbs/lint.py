@@ -1,8 +1,12 @@
 """`check`: wiki lint plus plugin checks. Each finding is (level, where, message); E = must fix (secrets),
-W = should fix, I = needs a curation step (verify, supersede)."""
+W = should fix, I = needs a curation step (verify, supersede).
+
+Errors also reach the session header without anyone running `check`: the daily scan runs the lint after slow
+commands (never in a lookup or the header), and the header names the pages, never the text."""
 import difflib
 import json
 import re
+import time
 
 from memcrumbs import freshness, lint_records, markdown
 from memcrumbs.guard import instruction_like
@@ -12,6 +16,7 @@ from memcrumbs.sources import wiki_kind
 from memcrumbs.util import SHELL_SAFE, posix, read_text, shq
 
 REQUIRED = ("title", "summary", "verified")
+DAY = 86400
 DEPRECATED = (("status", "max_chars", "max_tokens (chars / 4)"),)        # (table, key, replacement)
 
 
@@ -53,8 +58,8 @@ def lint(project, today=None):
         kind = str(meta.get("kind") or "").lower() or wiki_kind(project, p)
         out += lint_records.findings(where, kind, meta, body)
         if markdown.truthy(meta.get("quarantined")):
-            out.append(("I", where, "quarantined (out of the index and header): review it, then memcrumbs quarantine "
-                                    "%s --lift in your own terminal, or delete it" % p.stem))
+            out.append(("I", where, "quarantined (out of the index and header): the owner reviews it, then "
+                                    "memcrumbs quarantine --lift %s, or deletes it" % p.stem))
         seen[p.stem.lower()] = (where, meta, body)
         if kind not in ("runbook", "journal") and re.match(r"(?i)\s*(how to|steps to|procedure)\b", str(meta.get("summary") or "")):
             out.append(("I", where, "reads like a runbook (summary starts %r): move it to runbooks/ or set kind: runbook"
@@ -109,6 +114,28 @@ def _baseline_path(project):
     return project.data / "check-baseline.json"
 
 
+def _checked(project):
+    return project.data / "check.json"
+
+
+def record(project, findings):
+    """Keep the error count and where (never the text) for the header."""
+    from memcrumbs import writeset
+    where = sorted({f[1] for f in findings if f[0] == "E"})
+    writeset.write_text(project, _checked(project), json.dumps(dict(at=time.time(), errors=sum(
+        1 for f in findings if f[0] == "E"), where=where[:3], more=max(0, len(where) - 3))) + "\n")
+
+
+def maybe_check(project):
+    """The daily lint, after the commands whose speed does not matter. It never fails the command."""
+    try:
+        p = _checked(project)
+        if not p.exists() or time.time() - float(json.loads(read_text(p)).get("at") or 0) > DAY:
+            record(project, lint(project))
+    except Exception:
+        pass
+
+
 def check(out, project, api, baseline=False, show_all=False, strict=False, dupes=False):
     """Lint plus plugin checks. `baseline` records today's warnings and curation steps, and from then on only new
     ones are listed (errors are never baselined: a secret is always shown); `strict` also fails on new warnings;
@@ -129,6 +156,10 @@ def check(out, project, api, baseline=False, show_all=False, strict=False, dupes
         findings += near.findings(project)
     order = {"E": 0, "W": 1, "I": 2}
     findings.sort(key=lambda f: (order.get(f[0], 3), f[1], f[2]))
+    try:
+        record(project, findings)
+    except OSError:
+        pass
     known, since = set(), None
     bp = _baseline_path(project)
     if baseline:

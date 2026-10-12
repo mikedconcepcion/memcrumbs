@@ -77,8 +77,11 @@ memcrumbs -p <project> wire --repo <repo> --apply --allow
 memcrumbs -p <project> doctor                               # the hook runs: exit 0, time, size
 ```
 
-`wire` adds a block to the repo's `CLAUDE.md`, a SessionStart hook that prints the header, and the memcrumbs
-skill. `--allow` lets the read-only lookups (`find`, `page`, `outline`, `sym`, `status`, `about`, `fact`) run
+`wire` adds a block to the repo's `CLAUDE.md`, a SessionStart hook that prints the header, the memcrumbs and
+memcrumbs-review skills, and ask rules: Claude Code asks the owner before each of the owner's decisions
+(`review --approve`, `quarantine --lift`, `suggest apply` and `undo`, `plan --approve`, `init --remove`), in every
+permission mode. Inside Claude Code memcrumbs runs those only in the form the rules name, so the owner's answer to
+that prompt is the approval. `--allow` lets the read-only lookups (`find`, `page`, `outline`, `sym`, `status`, `about`, `fact`) run
 without a permission prompt; without it every lookup asks. `--target agents` writes an `AGENTS.md` block for
 other agents. `wire --remove --apply` takes it all out again, byte for byte.
 
@@ -97,14 +100,18 @@ Aim for recall@3 of 0.85 or more. A miss usually means a page needs a better `su
 ## 7. Day to day
 
 - **Record as you go:** `memcrumbs log` for events, `decision` and `incident` for those, `rule` when the owner
-  corrects how the agent works. Agent-written rules and gotchas reach the header after the owner runs
-  `memcrumbs review`.
+  corrects how the agent works. Agent-written rules and gotchas reach the header after the owner approves them:
+  `/memcrumbs-review` in Claude Code, which also takes them through suggestions and quarantined pages.
 - **Keep it current on a budget:** re-indexing is automatic and free; rewriting stale pages costs tokens. The
   owner opens `memcrumbs dashboard --open` (or runs `memcrumbs plan`), picks pages and a budget, and the agent
   works through `memcrumbs plan next` until the budget is used.
 - **Take the offers that help:** `memcrumbs suggest` lists merges, missing pages, guards and skills, with the
-  evidence. `suggest apply ID` writes one after the owner's yes, and `suggest undo ID` reverses it.
-- **Weekly:** `check`, `bench`, and `stats --usage` (output size per command).
+  evidence. `suggest apply ID` writes one after the owner's yes, and `suggest undo ID` reverses it. With
+  transcripts on (`init` asks), the work you repeat becomes skill offers: a task flow or a pipeline (the same
+  steps in the same order in 3 tasks on 2 days, or in 6 tasks). The header pings with a count once a day; the
+  agent lists them only when you say so, since listing costs tokens.
+- **Weekly:** `bench` and `stats --usage` (output size per command). `check` runs by itself once a day after a
+  slow command, and the header names any page that holds secret-like text; run it after you fix one.
 
 ## Upgrading
 

@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>memcrumbs: project memory for coding agents</title>
 <meta name="description" content="An open-source CLI that gives coding agents like Claude Code a project memory: a markdown wiki and a local index that answers in a few hundred tokens.">
-<meta name="keywords" content="coding agent memory, Claude Code, CLAUDE.md, AGENTS.md, project wiki, agent context, token efficiency, SQLite FTS5, BM25 search, code outline, architecture decision records, runbooks, incident postmortems, secret redaction, command-line tool, Python">
+<meta name="keywords" content="coding agent memory, Claude Code, CLAUDE.md, AGENTS.md, project wiki, agent context, token efficiency, SQLite FTS5, BM25 search, code outline, architecture decision records, runbooks, incident postmortems, secret redaction, Claude Code skills, permission prompts, workflow automation, command-line tool, Python">
 <meta name="author" content="mikedconcepcion">
 <link rel="canonical" href="https://mikedconcepcion.github.io/memcrumbs/">
 <meta property="og:title" content="memcrumbs: project memory for coding agents">
@@ -29,7 +29,7 @@
  "downloadUrl": "https://pypi.org/project/memcrumbs/",
  "applicationCategory": "DeveloperApplication",
  "operatingSystem": "Windows, macOS, Linux",
- "softwareVersion": "0.4.2",
+ "softwareVersion": "0.5.0",
  "license": "https://www.apache.org/licenses/LICENSE-2.0",
  "programmingLanguage": "Python",
  "softwareRequirements": "Python 3.11 or newer",
@@ -47,7 +47,7 @@
    "https://github.com/mikedconcepcion"
   ]
  },
- "keywords": "coding agent memory, Claude Code, CLAUDE.md, AGENTS.md, project wiki, agent context, token efficiency, SQLite FTS5, BM25 search, code outline, architecture decision records, runbooks, incident postmortems, secret redaction, command-line tool, Python",
+ "keywords": "coding agent memory, Claude Code, CLAUDE.md, AGENTS.md, project wiki, agent context, token efficiency, SQLite FTS5, BM25 search, code outline, architecture decision records, runbooks, incident postmortems, secret redaction, Claude Code skills, permission prompts, workflow automation, command-line tool, Python",
  "datePublished": "2026-10-11",
  "dateModified": "2026-10-12",
  "featureList": [
@@ -57,7 +57,11 @@
   "Decision and incident records",
   "Single-sourced facts",
   "Secret redaction that fails closed",
-  "Byte-exact undo for every change it offers"
+  "Byte-exact undo for every change it offers",
+  "Owner approval inside the Claude Code session, through Claude Code's permission prompt",
+  "Skill offers from repeated task flows and pipelines",
+  "A daily secret check that names the page in the session header",
+  "Self-update that checks memcrumbs still starts"
  ]
 }
 </script>
@@ -87,7 +91,23 @@
    "name": "Which coding agents does it work with?",
    "acceptedAnswer": {
     "@type": "Answer",
-    "text": "Claude Code gets a CLAUDE.md block, a session-start hook and a skill from memcrumbs wire. Other agents can read an AGENTS.md block (wire --target agents), and any agent that can run shell commands can use the commands directly."
+    "text": "Claude Code gets a CLAUDE.md block, a session-start hook, two skills and permission rules from memcrumbs init. Other agents can read an AGENTS.md block (wire --target agents), and any agent that can run shell commands can use the commands directly."
+   }
+  },
+  {
+   "@type": "Question",
+   "name": "How do I approve what the agent writes?",
+   "acceptedAnswer": {
+    "@type": "Answer",
+    "text": "Rules and gotchas an agent writes reach the session header only after you approve them. In Claude Code, type /memcrumbs-review: the agent shows each line in full, and Claude Code's own permission prompt asks you before the approval runs. In your own terminal, memcrumbs review --approve asks you to type a code."
+   }
+  },
+  {
+   "@type": "Question",
+   "name": "Can it turn work I repeat into skills?",
+   "acceptedAnswer": {
+    "@type": "Answer",
+    "text": "Yes, if you turn on transcripts (memcrumbs init asks). memcrumbs reads Claude Code's transcripts locally and finds task flows and pipelines you repeat: the same steps in the same order in 3 tasks on 2 days, or in 6 tasks. The session header shows a count; the agent lists the offers when you ask, and a skill is written only on your yes, without your commands' text."
    }
   },
   {
@@ -352,16 +372,34 @@ EmberOps.psm1 — cited by 1 decision (ACCEPTED), 2 incidents, 1 runbook</pre>
         </div>
         <div class="feature">
           <h3>Offers, never surprises</h3>
-          <p>It suggests merges, missing pages, permission prompts for gotchas and repeated command sequences worth a skill.
-            Each applies only on your yes and undoes byte for byte.</p>
+          <p>It suggests merges, missing pages, pages for questions the wiki could not answer and permission prompts for
+            gotchas. Each applies only on your yes and undoes byte for byte.</p>
           <p><code>suggest</code> · <code>suggest undo ID</code></p>
+        </div>
+        <div class="feature">
+          <h3>You approve, in the session</h3>
+          <p>Rules and gotchas the agent drafts wait for you. Type <code>/memcrumbs-review</code>: the agent shows each line,
+            and Claude Code's permission prompt asks you before the approval runs.</p>
+          <p><code>/memcrumbs-review</code></p>
+        </div>
+        <div class="feature">
+          <h3>Skills from work you repeat</h3>
+          <p>Task flows and pipelines you run again and again, such as test, scan, commit, push, become skill offers. The
+            header only shows a count; you decide when to look.</p>
+          <p><code>suggest --kind skill</code></p>
+        </div>
+        <div class="feature">
+          <h3>Updates that check themselves</h3>
+          <p>One command upgrades, re-indexes and refreshes the wiring, then checks that memcrumbs still starts. If pip
+            broke it, the version you had is put back.</p>
+          <p><code>memcrumbs update</code></p>
         </div>
       </div>
     </section>
 
     <section id="how" aria-labelledby="how-h">
       <div class="sec-head"><h2 id="how-h">How a session goes</h2></div>
-      <p class="intro">After <code>memcrumbs wire</code>, every Claude Code session in the repo follows these four steps. The
+      <p class="intro">After <code>memcrumbs init</code>, every Claude Code session in the repo follows these five steps. The
         output below is real, from the invented sample project in the repository.</p>
       <ol class="steps">
         <li>
@@ -387,6 +425,15 @@ EmberOps.psm1 — cited by 1 decision (ACCEPTED), 2 incidents, 1 runbook</pre>
             keyed on the symptom the next person will see.</p></div>
           <figure class="term"><pre><span class="p">$</span> memcrumbs decision "Move bookings to Postgres" \
     --status rejected --why "too much to run for our size"</pre></figure>
+        </li>
+        <li>
+          <div><h3>You approve what it wrote</h3><p>A rule the agent adds waits outside the header until you approve it, in
+            the same session. Claude Code asks you before the approval runs.</p></div>
+          <figure class="term"><pre><span class="p">&gt;</span> /memcrumbs-review
+[24109529bc] rules.md: - Ask the owner before moving a booked firing to another kiln
+<span class="p">$</span> memcrumbs review --approve 24109529bc
+<span class="d"># Claude Code asks you first; you say yes</span>
+reviewed 1 item(s)</pre></figure>
         </li>
       </ol>
     </section>
@@ -438,6 +485,8 @@ EmberOps.psm1 — cited by 1 decision (ACCEPTED), 2 incidents, 1 runbook</pre>
             excluded by default.</li>
           <li><strong>It writes only where it should.</strong> The project's wiki, its index folder and the files
             <code>wire</code> names. Any other write is refused.</li>
+          <li><strong>A secret in the wiki shows up by itself.</strong> A daily check names the page in the session header,
+            never the value.</li>
         </ul>
         <ul class="checks">
           <li><strong>Everything undoes.</strong> <code>wire --remove</code> and <code>suggest undo</code> restore files byte
@@ -446,6 +495,8 @@ EmberOps.psm1 — cited by 1 decision (ACCEPTED), 2 incidents, 1 runbook</pre>
             prompt, on your yes.</li>
           <li><strong>Scan before you publish.</strong> <code>memcrumbs scan</code> checks a folder, an sdist or a wheel for
             secret-like values.</li>
+          <li><strong>You approve, not the agent.</strong> Its rules and gotchas wait for you, and inside Claude Code the
+            approval runs only through Claude Code's permission prompt.</li>
         </ul>
       </div>
     </section>
@@ -455,7 +506,7 @@ EmberOps.psm1 — cited by 1 decision (ACCEPTED), 2 incidents, 1 runbook</pre>
       <p class="intro">Two commands from install to a wired repository. <code>init</code> names the project after the repo, drafts the map from it, indexes the code and the repo's markdown, asks once before it wires Claude Code, and runs a health check. Later, <code>memcrumbs update</code> keeps it current. The setup guide covers each step by hand.</p>
       <figure class="term"><pre><span class="p">$</span> pip install memcrumbs
 <span class="p">$</span> cd /code/myapp &amp;&amp; memcrumbs init
-<span class="d"># CLAUDE.md block, session header hook and skill; undo with init --remove</span></pre></figure>
+<span class="d"># CLAUDE.md block, session header hook, two skills, approval prompts; undo with init --remove</span></pre></figure>
     </section>
 
     <section id="faq" class="faq" aria-labelledby="faq-h">
@@ -469,9 +520,19 @@ EmberOps.psm1 — cited by 1 decision (ACCEPTED), 2 incidents, 1 runbook</pre>
           the newest release, when you run <code>memcrumbs update</code> or, if you turn it on, once a day. Your wiki is
           plain markdown in a folder you choose, and the index is a local SQLite file.</p></details>
       <details><summary>Which coding agents does it work with?</summary>
-        <p>Claude Code gets a <code>CLAUDE.md</code> block, a session-start hook and a skill from <code>memcrumbs wire</code>.
-          Other agents can read an <code>AGENTS.md</code> block (<code>wire --target agents</code>), and any agent that can run
-          shell commands can use the commands directly.</p></details>
+        <p>Claude Code gets a <code>CLAUDE.md</code> block, a session-start hook, two skills and permission rules from
+          <code>memcrumbs init</code>. Other agents can read an <code>AGENTS.md</code> block (<code>wire --target agents</code>),
+          and any agent that can run shell commands can use the commands directly.</p></details>
+      <details><summary>How do I approve what the agent writes?</summary>
+        <p>Rules and gotchas an agent writes reach the session header only after you approve them. In Claude Code, type
+          <code>/memcrumbs-review</code>: the agent shows each line in full, and Claude Code's own permission prompt asks you
+          before the approval runs. In your own terminal, <code>memcrumbs review --approve</code> asks you to type a
+          code.</p></details>
+      <details><summary>Can it turn work I repeat into skills?</summary>
+        <p>Yes, if you turn on transcripts (<code>memcrumbs init</code> asks). memcrumbs reads Claude Code's transcripts
+          locally and finds task flows and pipelines you repeat: the same steps in the same order in 3 tasks on 2 days, or in
+          6 tasks. The session header shows a count; the agent lists the offers when you ask, and a skill is written only on
+          your yes, without your commands' text.</p></details>
       <details><summary>How is it different from Claude Code's auto-memory?</summary>
         <p>Auto-memory is notes an agent keeps for itself. memcrumbs keeps a curated wiki with age and status on every answer,
           searched on demand instead of loaded in full. It can also offer to replace auto-memory notes the wiki already holds
@@ -493,7 +554,7 @@ EmberOps.psm1 — cited by 1 decision (ACCEPTED), 2 incidents, 1 runbook</pre>
       <a href="https://github.com/mikedconcepcion/memcrumbs/blob/main/SECURITY.md">Security</a>
       <a href="https://github.com/mikedconcepcion/memcrumbs/issues/new/choose">Report a bug</a>
     </nav>
-    <span class="right">Version 0.4.2 · alpha</span>
+    <span class="right">Version 0.5.0 · alpha</span>
   </footer>
 </div>
 

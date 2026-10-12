@@ -47,7 +47,9 @@ from = "repo/VERSION"                   # relative to the project folder, the wi
 pattern = '^(\S+)'                     # the first group (or the whole match) is the value
 
 [suggest]                               # opt-in, local only
-transcripts = false                     # read ~/.claude/projects/<repo>/*.jsonl: command shapes, files read, lookups
+transcripts = false                     # read ~/.claude/projects/<repo>/*.jsonl: command shapes, files read and edited,
+                                        # lookups, where your messages fall; skill offers from task flows and pipelines
+                                        # (`init` turns it on with the wiring, after your yes)
 query_log = false                       # log the text of lookups the wiki could not answer (.memcrumbs/gaps.jsonl)
 gap_cover = 0.4                         # a wiki hit answers a lookup when it holds this share of the query's information
 
@@ -56,7 +58,7 @@ notify = false                          # check PyPI once a day (after slow comm
                                         # release is out. `memcrumbs update` works either way
 
 [review]                                # agent-written knowledge
-gate_header = true                      # rule/gotcha lines reach the header after `memcrumbs review`
+gate_header = true                      # rule/gotcha lines reach the header after the owner's review
 
 [check]
 max_lines = 300                         # W when a page is longer

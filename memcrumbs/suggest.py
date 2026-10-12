@@ -122,7 +122,8 @@ def header_line(project, api=None):
         new = [k for k, v in st["open"].items() if isinstance(v, dict) and not v.get("seen") and _active(st, k, today)]
     except Exception:                                  # a broken state never costs the header
         return ""
-    return "%d new suggestion%s: memcrumbs suggest" % (len(new), "s" if len(new) != 1 else "") if new else ""
+    return ("%d new suggestion%s: tell the owner; list them only on their word, since it costs tokens (memcrumbs "
+            "suggest)" % (len(new), "s" if len(new) != 1 else "")) if new else ""
 
 
 def _diff(project, path, new):

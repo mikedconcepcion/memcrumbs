@@ -6,8 +6,10 @@
 - **Header.** The standing sections (rules, top gotchas) show only reviewed lines. The lines present when review
   arrives are kept, and lines added later wait; one header line says how many (`[review] gate_header = false`
   turns this off).
-- **`memcrumbs review`** lists what waits as one digest. `review --approve all|ID,…` marks it reviewed, and is
-  refused inside an agent shell, so an agent cannot approve its own text.
+- **`memcrumbs review`** lists what waits as one digest. `review --approve all|ID,…` marks it reviewed. A human
+  types a code at a terminal. Inside Claude Code it runs only in the form `wire`'s ask rules name, so Claude Code
+  asks the owner first and their answer is the approval (the memcrumbs-review skill); any other agent shell is
+  refused, so an agent cannot approve its own text.
 - **`memcrumbs quarantine <page>`** keeps a page on disk but out of the index and the header. Git is the
   rollback."""
 import datetime as dt
@@ -39,9 +41,16 @@ def interactive():
         return False
 
 
-def confirm(what):
+def confirm(what, project=None, cmd=None):
     """A human at a terminal types a code. An agent's shell has no terminal (and its environment says so), so an
-    agent cannot approve its own text by clearing a variable."""
+    agent cannot approve its own text by clearing a variable. Inside Claude Code, the owner's answer to the prompt
+    an ask rule forces is the approval: `cmd` (an OWNER entry) must run in the form that rule names."""
+    from memcrumbs import claude_settings as cs
+    if writer() == "agent" and cmd and cs.in_claude_code():
+        why = cs.owner_form(project, cmd)
+        if why is None:
+            return
+        raise SystemExit("memcrumbs: %s needs the owner: %s; or the owner runs it in their own terminal" % (what, why))
     if writer() == "agent" or not interactive():
         raise SystemExit("memcrumbs: %s needs a human: run it in your own terminal, not through the agent" % what)
     code = "%04d" % secrets.randbelow(10000)
@@ -138,9 +147,14 @@ def digest(project):
     return items, kept
 
 
+def quarantined(project):
+    return sorted(p.stem for p in project.wiki_pages()
+                  if markdown.truthy(markdown.frontmatter(read_text(p))[0].get("quarantined")))
+
+
 def approve(project, ids):
-    """Mark items reviewed: 'all', or ids from the digest ('kept' marks the kept lines as seen). Humans only."""
-    confirm("approve these reviews")
+    """Mark items reviewed: 'all', or ids from the digest ('kept' marks the kept lines as seen). The owner only."""
+    confirm("approve these reviews", project, ("review", "--approve"))
     items, _ = digest(project)
     want = {i.strip() for i in ids.split(",") if i.strip()}
     pick = [it for it in items if "all" in want or it["id"] in want]
@@ -168,12 +182,21 @@ def command(out, project, approve_ids=None, show_kept=False):
                                        or "all" in approve_ids else ""))
         return 0
     items, kept = digest(project)
-    out.set(items=items, kept=kept if show_kept else len(kept))
+    held = quarantined(project)
+    out.set(items=items, kept=kept if show_kept else len(kept), quarantined=held)
+    if held:
+        out("quarantined (out of the index and the header until the owner lifts it): %s — memcrumbs quarantine "
+            "--lift NAME" % ", ".join(held))
     if not items and not kept:
         out("nothing waits for review")
         return 0
-    out("%d item(s) wait for review — approve in your own terminal: memcrumbs review --approve all (or ID,…)"
-        % len(items))
+    from memcrumbs import claude_settings as cs
+    if cs.in_claude_code():
+        out("%d item(s) wait for review: show each in full to the owner; on their word, memcrumbs review --approve "
+            "all (or ID,…), and Claude Code asks them first (skill: memcrumbs-review)" % len(items))
+    else:
+        out("%d item(s) wait for review — approve in your own terminal: memcrumbs review --approve all (or ID,…)"
+            % len(items))
     for it in items:
         if it["what"] == "line":
             out("[%s] %s: %s" % (it["id"], it["where"], it["text"]))
@@ -195,7 +218,7 @@ def quarantine(out, project, name, lift=False):
     """Keep a page on disk but out of the index and the header (`--lift` puts it back; humans only)."""
     from memcrumbs.curate import exact_page
     if lift:
-        confirm("lift the quarantine")
+        confirm("lift the quarantine", project, ("quarantine", "--lift"))
     p = exact_page(project, name)
     text, info = read_doc(p)
     new = markdown.set_frontmatter(text, {"quarantined": None if lift else "true"})
