@@ -2,7 +2,7 @@
 import os
 import subprocess
 import tomllib
-from functools import cached_property
+from functools import cached_property, lru_cache
 from pathlib import Path
 
 from memcrumbs.redact import Redactor
@@ -34,6 +34,15 @@ def projects_dir():
         if d:
             return Path(d).expanduser()
     return USER_DIR / "projects"
+
+
+
+@lru_cache(maxsize=8)
+def _resolved(path):
+    try:
+        return Path(path).resolve()
+    except OSError:
+        return Path(path)
 
 
 class Project:
@@ -75,10 +84,13 @@ class Project:
         r = self.rel(path)
         if r.startswith("wiki/"):
             return r
-        try:
-            return posix(Path(path).relative_to(cwd or Path.cwd()))
-        except ValueError:
-            return r
+        here = Path(cwd or os.getcwd())
+        for base in (here, _resolved(str(here))):    # the index holds resolved paths; a cwd may be a short (8.3) name
+            try:
+                return posix(Path(path).relative_to(base))
+            except ValueError:
+                continue
+        return r
 
     def rel(self, path):
         """Short display path: wiki-relative for wiki pages, else absolute posix."""
