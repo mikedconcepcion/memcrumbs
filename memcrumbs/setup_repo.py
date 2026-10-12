@@ -21,7 +21,7 @@ from pathlib import Path
 
 from memcrumbs import cmd_setup, indexer, plugins, project as proj, repo_signals as signals, writeset
 from memcrumbs.redact import safe
-from memcrumbs.util import newline_of, posix, read_doc
+from memcrumbs.util import newline_of, posix, read_doc, walk_stat
 
 OFFERS = ("[suggest]                        # turned on with the wiring: skill offers from repeated work (Claude "
           "Code's transcripts, read locally)\ntranscripts = true\n")
@@ -70,6 +70,21 @@ def _repos(args):
     return [top] if top else []
 
 
+TOO_MANY = 20000                 # files: a folder this big is not one project (or not on purpose)
+
+
+def _plain_folder():
+    """The working folder, when it is not in git: (folder, None), or (None, why it is refused). A drive root, the
+    home folder, a folder holding the memcrumbs projects, or a tree too big for one project is refused."""
+    here, home, projects = Path.cwd().resolve(), Path.home().resolve(), proj.projects_dir().resolve()
+    if here == Path(here.anchor) or here == home or here in projects.parents or projects in [here, *here.parents]:
+        return None, "is too broad to be one project"
+    for n, _ in enumerate(walk_stat(here, ["**/*"], max_bytes=1 << 40), 1):
+        if n > TOO_MANY:
+            return None, "holds more than %d files" % TOO_MANY
+    return here, None
+
+
 def _owner(name, repo):
     """The project already set up for this repo (or named NAME), or None. One repo, one project: a second name
     for a set-up repo would add a second hook."""
@@ -91,10 +106,14 @@ def init(out, args):
     if args.remove:
         return remove(out, args)
     repos = _repos(args)
+    if not repos and not args.name:                  # not in git: this folder is the project's folder
+        here, why = _plain_folder()
+        if here is None:
+            raise SystemExit("memcrumbs: %s is not in a git repository and %s. Run memcrumbs init in your project "
+                             "folder, pass --repo PATH, or pass a NAME for a wiki without a repo" % (posix(Path.cwd()), why))
+        out("not a git repository: setting up this folder")
+        repos = [here]
     if not repos:
-        if not args.name:
-            raise SystemExit("memcrumbs: not inside a git repository. Run memcrumbs init in your repo, pass "
-                             "--repo PATH, or pass a NAME for a wiki without a repo")
         cmd_setup.init(out, args.name, [], args.title)
         return 0
     repo = repos[0]
@@ -218,8 +237,8 @@ def remove(out, args):
     if args.name:
         project = proj.resolve(args.name)
     else:
-        repos = _repos(args)
-        project = proj._by_path(proj.all_projects(), repos[0]) if repos else None
+        repos = _repos(args) or [Path.cwd().resolve()]      # a folder set up without git is found the same way
+        project = proj._by_path(proj.all_projects(), repos[0])
     if project is None:
         raise SystemExit("memcrumbs: no project is set up here; pass its name: memcrumbs init --remove NAME")
     from memcrumbs.cli import owner_gate

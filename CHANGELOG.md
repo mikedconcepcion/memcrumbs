@@ -3,6 +3,14 @@
 What changed for users, newest first. Versions follow [semver](https://semver.org/) from 1.0; before 1.0 the
 command line and config may still change, and every such change is listed here.
 
+## [0.5.3] — 2026-10-13
+
+### Changed
+
+- **`memcrumbs init` works in a folder that is not a git repository.** It sets up the folder you are in, and says
+  so. It still refuses a drive root, your home folder, the folder that holds your memcrumbs projects, or a folder
+  with more than 20,000 files: run it in the project folder, or pass `--repo PATH`.
+
 ## [0.5.2] — 2026-10-13
 
 ### Changed

@@ -3,8 +3,9 @@ back every repo file byte for byte."""
 import os
 import subprocess
 from pathlib import Path
+from unittest import mock
 
-from memcrumbs import header, project as proj
+from memcrumbs import cli, header, project as proj, setup_repo
 from test_cli import ProjectCase, run
 from test_wire import snapshot
 
@@ -122,8 +123,39 @@ class Init(ProjectCase):
         self.assertFalse(p.dir.exists())
         self.assertFalse((self.app / ".claude").exists())
 
+    def test_a_plain_folder_is_set_up_without_git(self):
+        folder = Path(self.tmp.name) / "Trading Tools"
+        (folder / "scripts").mkdir(parents=True)
+        (folder / "scripts" / "fetch.py").write_text('def fetch_prices():\n    """Fetch the day\'s prices."""\n',
+                                                      encoding="utf-8")
+        os.chdir(folder)
+        code, out = run(["init", "--yes"])
+        self.assertEqual(code, 0, out)
+        self.assertIn("not a git repository: setting up this folder", out)
+        p = proj.resolve("trading-tools")
+        self.assertEqual([r.resolve() for r in p.repos], [folder.resolve()])
+        self.assertTrue((folder / "CLAUDE.md").exists())
+        self.assertIn("fetch_prices", run(["-p", "trading-tools", "sym", "fetch_prices"])[1])
+        self.assertIn("unwired", run(["init", "--remove"])[1])                 # found again without git
+        self.assertFalse((folder / "CLAUDE.md").exists())
+
+    def test_a_folder_too_broad_or_too_big_is_refused(self):
+        def refused():
+            with self.assertRaises(SystemExit) as e:
+                cli.main(["init"])
+            return str(e.exception.code)
+        os.chdir(self.tmp.name)                       # holds the projects folder
+        self.assertIn("is too broad to be one project", refused())
+        big = Path(self.tmp.name) / "big"
+        big.mkdir()
+        for i in range(4):
+            (big / ("f%d.py" % i)).write_text("x = 1\n", encoding="utf-8")
+        os.chdir(big)
+        with mock.patch.object(setup_repo, "TOO_MANY", 3):
+            self.assertIn("holds more than 3 files", refused())
+
     def test_outside_a_repo_a_name_makes_a_wiki_only(self):
         os.chdir(self.tmp.name)
-        self.assertEqual(run(["init"])[0], 1)                                  # no repo, no name: says what to do
+        self.assertEqual(run(["init"])[0], 1)                                  # a folder holding the projects: refused
         self.assertIn("created", run(["init", "notes"])[1])
         self.assertEqual(proj.resolve("notes").repos, [])
