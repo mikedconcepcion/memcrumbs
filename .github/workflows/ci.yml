@@ -1,7 +1,9 @@
 name: ci
 
+# The full matrix (3 OS x 3 Python, the quick start, the speed targets) runs in the public repository, where
+# GitHub Actions is free. A private copy pays per minute (Windows 2x, macOS 10x), so there a push runs one Linux job.
 on:
-  push:                     # every branch: CI must run before the public flip (gate D1)
+  push:
   pull_request:
   workflow_dispatch:
 
@@ -15,8 +17,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-        python: ["3.11", "3.12", "3.13"]
+        os: ${{ fromJSON(github.repository == 'mikedconcepcion/memcrumbs' && '["ubuntu-latest", "windows-latest", "macos-latest"]' || '["ubuntu-latest"]') }}
+        python: ${{ fromJSON(github.repository == 'mikedconcepcion/memcrumbs' && '["3.11", "3.12", "3.13"]' || '["3.11"]') }}
     defaults:
       run:
         shell: bash
@@ -43,6 +45,7 @@ jobs:
 
   quickstart:
     name: fresh clone to first answer (${{ matrix.os }})
+    if: github.repository == 'mikedconcepcion/memcrumbs'
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -57,6 +60,7 @@ jobs:
 
   perf:
     name: speed targets, 10k files (${{ matrix.os }})
+    if: github.repository == 'mikedconcepcion/memcrumbs'
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false

@@ -235,6 +235,14 @@ class SafeInstall(ProjectCase):
         _, _, calls = self.update(pip=(1,), starts=(__version__,), windows=False)
         self.assertEqual(calls.count(PIP), 1)                     # elsewhere: no retry
 
+    def test_a_release_pip_cannot_see_yet_is_said_and_nothing_is_finished(self):
+        code, said, calls = self.update(pip=(0,), starts=(__version__,))
+        self.assertEqual(code, 1)
+        self.assertIn("pip found nothing newer than %s yet" % __version__, said)
+        self.assertIn("run memcrumbs update again shortly", said)
+        self.assertNotIn("installed:", said)
+        self.assertFalse(any("index" in c for c in calls))                     # no index or wire after it
+
     def scripts(self, *leftovers):
         """A Scripts folder with memcrumbs' two launchers, and copies an earlier update left."""
         folder = Path(self.tmp.name) / "Scripts"

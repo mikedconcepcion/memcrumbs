@@ -25,8 +25,8 @@ STYLE = ("Answer first: no greeting, recap or sign-off.",
          "Do not re-read a file you read this session unless it changed.",
          "A file over ~1,000 lines: memcrumbs outline <file>, then read only the range you need.",
          "Do not guess versions, flags or names: memcrumbs fact / find, or read the code.")
-LOOKUP = ('Look up before reading files: memcrumbs find "<words>" · page <name> [section] · outline <file> · '
-          'sym <name> · log "<note>"  (skill: memcrumbs)')
+LOOKUP = ('Project knowledge: memcrumbs find "<words>" · page <name> [section] · outline <file> · sym <name> · '
+          'log "<note>"; an exact name: grep for it  (skill: memcrumbs)')
 
 
 NEW_WIKI = ("new wiki: rules and gotchas are empty. First run (skill memcrumbs): draft them from CLAUDE.md, the README "

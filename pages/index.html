@@ -29,7 +29,7 @@
  "downloadUrl": "https://pypi.org/project/memcrumbs/",
  "applicationCategory": "DeveloperApplication",
  "operatingSystem": "Windows, macOS, Linux",
- "softwareVersion": "0.5.1",
+ "softwareVersion": "0.5.2",
  "license": "https://www.apache.org/licenses/LICENSE-2.0",
  "programmingLanguage": "Python",
  "softwareRequirements": "Python 3.11 or newer",
@@ -49,7 +49,7 @@
  },
  "keywords": "coding agent memory, Claude Code, CLAUDE.md, AGENTS.md, project wiki, agent context, token efficiency, SQLite FTS5, BM25 search, code outline, architecture decision records, runbooks, incident postmortems, secret redaction, Claude Code skills, permission prompts, workflow automation, command-line tool, Python",
  "datePublished": "2026-10-11",
- "dateModified": "2026-10-12",
+ "dateModified": "2026-10-13",
  "featureList": [
   "Session header of standing rules under a token cap",
   "Ranked lookups with path:line, age and status",
@@ -123,7 +123,7 @@
    "name": "How useful is it on a repository with no wiki yet?",
    "acceptedAnswer": {
     "@type": "Answer",
-    "text": "From the first session, find searches the repository's own docs and code symbols. On httpx, before any wiki page was written, the answer was in the top 3 for 75% of 32 questions written blind (90% of the code questions), at about 380 tokens per answer; reading the one file that holds the answer costs a median of 2,410 tokens. Rules, gotchas and decisions you add make it better from there."
+    "text": "From the first session, find searches the repository's own docs and code symbols. On httpx, before any wiki page was written, the answer was in the top 3 for 75% of 32 questions written blind (90% of the code questions), at about 380 tokens per answer. Rules, gotchas and decisions you add make it better from there."
    }
   },
   {
@@ -422,7 +422,7 @@ EmberOps.psm1 — cited by 1 decision (ACCEPTED), 2 incidents, 1 runbook</pre>
           <div><h3>The session starts with the header</h3><p>A SessionStart hook prints the rules, the map, the top gotchas and
             recent journal lines. The agent reads them before it reads any code.</p></div>
           <figure class="term"><pre><span class="h">memcrumbs · Emberline Ceramics (bench)</span> — 43 pages · index 449 docs
-<span class="d">Look up before reading files: memcrumbs find "&lt;words&gt;"</span></pre></figure>
+<span class="d">Project knowledge: memcrumbs find "&lt;words&gt;" · …; an exact name: grep for it</span></pre></figure>
         </li>
         <li>
           <div><h3>The agent asks the wiki</h3><p>Plain questions work: question words are dropped, a thesaurus bridges
@@ -478,9 +478,8 @@ reviewed 1 item(s)</pre></figure>
                 wiki page is written</td>
                 <td class="how">encode/httpx at <code>b5addb64</code>: 32 held-out questions written by a separate agent, run
                 once with <code>scripts/day0.py</code> (code questions: 0.90)</td></tr>
-            <tr><td class="num">377 vs 2,410</td><td>Tokens per answer on that repository, against reading the one file
-                that holds the answer</td>
-                <td class="how">Mean per <code>find</code> answer, and the median size of the answering file, characters ÷ 4</td></tr>
+            <tr><td class="num">≈ 380</td><td>Tokens per lookup answer on that repository</td>
+                <td class="how">Mean per <code>find</code> answer over the same 32 questions, estimated as characters ÷ 4</td></tr>
             <tr><td class="num">0.95</td><td>Share of questions whose answer is in the top 3 hits (recall@3)</td>
                 <td class="how">40 held-out questions, written by a separate agent that never saw the search engine, on the invented sample project</td></tr>
             <tr><td class="num">≈ 450</td><td>Tokens per lookup answer</td>
@@ -565,8 +564,8 @@ reviewed 1 item(s)</pre></figure>
       <details><summary>How useful is it on a repository with no wiki yet?</summary>
         <p>From the first session, <code>find</code> searches the repository's own docs and code symbols. On httpx, before
           any wiki page was written, the answer was in the top 3 for 75% of 32 questions written blind (90% of the code
-          questions), at about 380 tokens per answer; reading the one file that holds the answer costs a median of 2,410
-          tokens. Rules, gotchas and decisions you add make it better from there.</p></details>
+          questions), at about 380 tokens per answer. Rules, gotchas and decisions you add make it better from
+          there.</p></details>
       <details><summary>Does it use embeddings or a vector database?</summary>
         <p>No. Search is SQLite FTS5 with BM25 ranking, a small thesaurus, your own synonyms and identifier splitting. On the
           sample project's held-out questions, 95% of answers are in the top 3 hits.</p></details>
@@ -584,7 +583,7 @@ reviewed 1 item(s)</pre></figure>
       <a href="https://github.com/mikedconcepcion/memcrumbs/blob/main/SECURITY.md">Security</a>
       <a href="https://github.com/mikedconcepcion/memcrumbs/issues/new/choose">Report a bug</a>
     </nav>
-    <span class="right">Version 0.5.1 · alpha</span>
+    <span class="right">Version 0.5.2 · alpha</span>
   </footer>
 </div>
 

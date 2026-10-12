@@ -163,6 +163,10 @@ def _install(out, how, cmd, latest, project):
         code, output = run_installer(cmd)
         runs.append((cmd, code, output))
     now = working()
+    if code == 0 and now == __version__ != latest:       # pip found nothing newer: its index lags a new release
+        raise SystemExit("memcrumbs: pip found nothing newer than %s yet. PyPI can take a few minutes to serve a new "
+                         "release (%s); nothing changed: run memcrumbs update again shortly.%s"
+                         % (now, latest, _log(project, runs)))
     if code == 0 and now:
         _log(project, runs)
         return now

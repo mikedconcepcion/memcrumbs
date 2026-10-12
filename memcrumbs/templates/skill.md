@@ -1,14 +1,17 @@
 ---
 name: memcrumbs
-description: Look up project knowledge (rules, runbooks, gotchas, decisions, incidents, code symbols) with the memcrumbs CLI before reading files, and record what changed in the wiki. Use in any project that has a memcrumbs wiki (memcrumbs status works).
+description: Look up project knowledge (rules, runbooks, gotchas, decisions, incidents, docs) with the memcrumbs CLI, find code by name, and record what changed in the wiki. Use in any project that has a memcrumbs wiki (memcrumbs status works).
 ---
 # memcrumbs — project wiki + token-efficient index
 
-**Look up before you read.** Every command prints a small, capped result with `path:line`, age and status.
+**Look up project knowledge first; grep for exact names.** For rules, decisions, incidents, runbooks, how-to in the
+docs and anything you do not know the name of yet, `memcrumbs find` first. When you already know the exact name (a
+function, class, setting or error text), search for it directly with Grep, or `memcrumbs sym` for a symbol: a lookup
+first only adds a step. Every command prints a small, capped result with `path:line`, age and status.
 
 | Need | Command |
 |---|---|
-| Anything (facts, how-to, past incidents, where code is) | `memcrumbs find "deploy api restart"` (`-k runbook,decision,incident,wiki,code` to narrow, `-n 16` for more) |
+| Project knowledge, or a question you do not know the name for (facts, how-to, past incidents) | `memcrumbs find "deploy api restart"` (`-k runbook,decision,incident,wiki,code` to narrow, `-n 16` for more) |
 | One page, or one section of it | `memcrumbs page hosts` · `memcrumbs page hosts "web-01"` · `--full` for all |
 | What is in a code file | `memcrumbs outline path/to/file.py` (`--kinds def,class`, `--grep x`); a folder lists files |
 | Where a function lives | `memcrumbs sym load_config` · `memcrumbs sym load_config --body` |

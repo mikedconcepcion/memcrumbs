@@ -27,7 +27,8 @@ OLD_SKILLS = {"sha256:833110da09379bbaf379f3964563cc7d5253feff2b1bb1fad9dc2b71a6
               "sha256:ed5ac17c5edfe1dec670ee72f62200a2ed682b1266b0b2556fb84a623e1338cd",     # 0.2.0.dev1-dev5
               "sha256:e5b8c3db45712581e73218b350bdc96fa2c368103759356be9e64ac1bdd88fb5",     # 0.2.0.dev6-0.3.0
               "sha256:8cb7413b7ba4f39d2f4c78b85b35a891f6008df45b8d7dda47035db5a922873c",     # 0.4.0-0.4.2
-              "sha256:84a8a28e9a672f52ce11d4fce87358fb7172ae45a2de24a494ff27ff595674b6"}     # 0.4.3.dev0
+              "sha256:84a8a28e9a672f52ce11d4fce87358fb7172ae45a2de24a494ff27ff595674b6",     # 0.4.3.dev0
+              "sha256:fc652b01ea2919881bd8c14b1d1b1552a8be9aa5641672a8f9662f23b6cb9a22"}     # 0.5.0-0.5.1
 OLD_REVIEW_SKILLS = {"sha256:217330c6278dd0d069d268ef1dbd7510de02cc5c5833ffec2be0a319b675ef65",   # 0.4.3.dev0
                      "sha256:d19c9bd5a52e5cd1d4daecba5fca9a111f1f6d9a1fe0e362bbdcf53ba611d2b7"}   # 0.4.3.dev0
 SKILLS = (("memcrumbs", "skill.md"), ("memcrumbs-review", "skill_review.md"))

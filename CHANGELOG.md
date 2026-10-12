@@ -3,6 +3,22 @@
 What changed for users, newest first. Versions follow [semver](https://semver.org/) from 1.0; before 1.0 the
 command line and config may still change, and every such change is listed here.
 
+## [0.5.2] — 2026-10-13
+
+### Changed
+
+- **Agents grep for exact names and use `find` for project knowledge.** The skill, the CLAUDE.md block and the
+  session header now say so. Before, they said to look everything up first, so an agent that already knew a
+  function's or setting's name ran a lookup and then grepped anyway: one extra step per question.
+
+### Fixed
+
+- **The README no longer compares an answer's tokens with reading a whole file.** Agents rarely read whole files,
+  so that comparison promised a saving they do not see.
+- **`memcrumbs update` right after a release:** PyPI can announce a new version a few minutes before pip can
+  download it. `update` then installed nothing newer and still said "installed". It now says that pip found nothing
+  newer yet, changes nothing, and asks you to run it again shortly.
+
 ## [0.5.1] — 2026-10-12
 
 ### Added

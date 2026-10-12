@@ -25,8 +25,7 @@ Three things work from the first session:
   docs and code symbols from the start, before you write a single wiki page, and returns a few ranked hits with
   `path:line`, how old each one is and whether it is still current. The agent then opens one section or one
   function, not a 4,000-line file. On httpx, with no wiki page written, the answer was in the top 3 for 75% of
-  32 questions written blind (90% of the code questions), at about 380 tokens per answer; reading the one file
-  that holds it costs a median of 2,410 ([method and data](https://github.com/mikedconcepcion/memcrumbs/tree/main/bench/httpx)).
+  32 questions written blind (90% of the code questions), at about 380 tokens per answer ([method and data](https://github.com/mikedconcepcion/memcrumbs/tree/main/bench/httpx)).
 - **What the wiki says about a file, before an edit.** `memcrumbs about deploy.ps1` lists the decisions,
   incidents and gotchas that cite it. It has more to say as you record them.
 

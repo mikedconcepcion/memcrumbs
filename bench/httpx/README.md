@@ -19,8 +19,6 @@ code symbols, searched with questions written blind.
 | code questions, recall@3 | 0.60 | 0.90 |
 | tokens per `find` answer (characters ÷ 4) | 586 | 377 |
 
-Reading the one file that holds the answer costs a median of 2,410 tokens.
-
 ## Run it yourself
 
 ```bash
