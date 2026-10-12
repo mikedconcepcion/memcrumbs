@@ -1,0 +1,157 @@
+{
+ "repo": "encode/httpx",
+ "commit": "b5addb64f0161ff6bfe94c124ef76f6a1fba5254",
+ "memcrumbs": "memcrumbs 0.5.1.dev0",
+ "questions": 32,
+ "bench": {
+  "n": 32,
+  "recall_at_1": 0.438,
+  "recall_at_3": 0.719,
+  "recall_at_3_with_pointers": 0.719,
+  "mrr": 0.579,
+  "tokens_mean": 374,
+  "tokens_p95": 439,
+  "ms_mean": 9.6,
+  "ms_p95": 15.7
+ },
+ "by_category": {
+  "behaviour": {
+   "n": 5,
+   "recall_at_1": 0.4,
+   "recall_at_3": 0.6,
+   "recall_at_3_with_pointers": 0.6,
+   "mrr": 0.5,
+   "tokens_mean": 373,
+   "tokens_p95": 420,
+   "ms_mean": 12.4,
+   "ms_p95": 15.9
+  },
+  "code": {
+   "n": 10,
+   "recall_at_1": 0.4,
+   "recall_at_3": 0.7,
+   "recall_at_3_with_pointers": 0.7,
+   "mrr": 0.588,
+   "tokens_mean": 373,
+   "tokens_p95": 469,
+   "ms_mean": 8.5,
+   "ms_p95": 12.8
+  },
+  "history": {
+   "n": 5,
+   "recall_at_1": 0.4,
+   "recall_at_3": 0.8,
+   "recall_at_3_with_pointers": 0.8,
+   "mrr": 0.567,
+   "tokens_mean": 375,
+   "tokens_p95": 410,
+   "ms_mean": 11.0,
+   "ms_p95": 15.4
+  },
+  "howto": {
+   "n": 12,
+   "recall_at_1": 0.5,
+   "recall_at_3": 0.75,
+   "recall_at_3_with_pointers": 0.75,
+   "mrr": 0.611,
+   "tokens_mean": 373,
+   "tokens_p95": 423,
+   "ms_mean": 8.8,
+   "ms_p95": 14.6
+  }
+ },
+ "file_tokens_median": 2410,
+ "file_tokens_mean": 3881,
+ "misses": [
+  [
+   "dev-doc-04",
+   null,
+   "How do I exercise my Flask app in unit tests by sending requests straight into it, no running server?",
+   [
+    "docs/advanced/transports.md",
+    "httpx/_transports/asgi.py",
+    "docs/contributing.md"
+   ]
+  ],
+  [
+   "dev-doc-07",
+   6,
+   "A legacy site sends no charset and the text comes out garbled. Can httpx guess the encoding?",
+   [
+    "docs/advanced/text-encodings.md",
+    "docs/quickstart.md",
+    "CHANGELOG.md"
+   ]
+  ],
+  [
+   "dev-doc-11",
+   6,
+   "How do I run my own function on every outgoing call and every reply, e.g. to stamp a header?",
+   [
+    "docs/advanced/clients.md",
+    "tests/conftest.py",
+    "httpx/_transports/asgi.py"
+   ]
+  ],
+  [
+   "dev-code-03",
+   null,
+   "Where do compressed response bodies get unpacked, and which compression schemes are supported?",
+   [
+    "tests/test_decoders.py",
+    "docs/index.md",
+    "README.md"
+   ]
+  ],
+  [
+   "dev-code-08",
+   8,
+   "Printing headers shows [secure] instead of my token. Where is that masking done?",
+   [
+    "httpx/_main.py",
+    "docs/advanced/authentication.md",
+    "docs/third_party_packages.md"
+   ]
+  ],
+  [
+   "dev-code-09",
+   4,
+   "My streaming endpoint arrives all at once when tested through the in-process async app transport. What buffers it?",
+   [
+    "docs/async.md",
+    "docs/advanced/transports.md",
+    "httpx/_transports/default.py"
+   ]
+  ],
+  [
+   "dev-beh-02",
+   null,
+   "How many redirect hops will a client follow before giving up with an error?",
+   [
+    "httpx/_exceptions.py",
+    "docs/compatibility.md",
+    "httpx/_client.py"
+   ]
+  ],
+  [
+   "dev-beh-04",
+   null,
+   "If NO_PROXY is set to .example.com, does the bare example.com still go through the proxy?",
+   [
+    "docs/environment_variables.md",
+    "docs/advanced/transports.md",
+    "docs/advanced/timeouts.md"
+   ]
+  ],
+  [
+   "dev-hist-05",
+   null,
+   "Porting from requests.Session, passing cookies on each client call warns about deprecation. What's the intended way?",
+   [
+    "CHANGELOG.md",
+    "docs/compatibility.md",
+    "docs/advanced/clients.md"
+   ]
+  ]
+ ]
+}

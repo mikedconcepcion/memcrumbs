@@ -78,13 +78,28 @@ _PROCEDURE = re.compile(r"(?i)\bhow (?:do|can|should|would) (?:i|we|you)\b|\bhow
                         r"\b(?:procedure|runbook|walk ?through|step by step)\b")
 
 
+_TESTS = re.compile(r"(?i)\b(?:conftest|fixtures?|tests?\s+(?:for|of|covering|that)|test\s+(?:file|case|suite)s?|"
+                    r"which\s+tests?)\b")
+
+
+def wants_tests(q):
+    """The question asks for tests themselves ("the tests for redirects", "which test covers …"): test files keep
+    their full score. Testing an app ("in my unit tests") is not that."""
+    return bool(_TESTS.search(q))
+
+
 def wants_procedure(q):
     """A "how do I / steps to" question: runbooks first."""
     return bool(_PROCEDURE.search(q))
 
 
+_WHERE_CODE = re.compile(r"(?i)\bwhere\s+(?:is|are|was|were|does|do|did)\s+(?!(?:i|we|you|my|our)\b)")
+
+
 def wants_code(q):
-    return any(w.strip("?!.,;:'`").lower() in CODE_INTENT for w in q.split())
+    """A question about code: it names code ("which function …"), or asks where something is done ("where is the
+    header masked", not "where do I set …")."""
+    return any(w.strip("?!.,;:'`").lower() in CODE_INTENT for w in q.split()) or bool(_WHERE_CODE.search(q))
 
 
 def _expr(alts, prefix):

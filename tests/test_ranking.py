@@ -5,7 +5,8 @@ import os
 from pathlib import Path
 
 from memcrumbs import markdown, project as proj, rank, synonyms
-from memcrumbs.query import term_pairs, wants_procedure
+from memcrumbs.query import term_pairs, wants_code, wants_procedure, wants_tests
+from memcrumbs.sources import split_ident
 from memcrumbs.verdicts import row_status, row_verdicts, verdict
 from test_cli import ProjectCase, run
 
@@ -89,3 +90,52 @@ class FieldR1(ProjectCase):
         (self.wiki / "odd.md").write_text("---\ntitle: Odd\nsummary: s\nverified: 2099-01-01\nstatus: rejectd\n---\n# Odd\n",
                                           encoding="utf-8")
         self.assertIn("did you mean 'rejected'", run(["-p", "t", "check"])[1])
+
+
+class RepoOnDayZero(ProjectCase):
+    """A repo with no wiki page written yet: source over its tests, short paths, and no starter text as answers."""
+
+    def setUp(self):
+        super().setUp()
+        (self.repo / "app").mkdir()
+        (self.repo / "app" / "decoders.py").write_text(
+            'class GZipDecoder:\n    """Handle gzip decoding of response bodies."""\n    def decode(self, data):\n'
+            '        return data\n', encoding="utf-8")
+        (self.repo / "tests").mkdir()
+        (self.repo / "tests" / "test_decoders.py").write_text(
+            "def test_gzip_decoding():\n    pass\n\n\ndef test_gzip_decoding_of_response_bodies():\n    pass\n",
+            encoding="utf-8")
+        for name in ("rules.md", "gotchas.md"):                  # the starter pages exactly as init writes them
+            (self.wiki / name).write_text((Path(proj.__file__).parent / "templates" / name).read_text(
+                encoding="utf-8").replace("{title}", "T"), encoding="utf-8")
+        run(["-p", "t", "index"])
+
+    def paths(self, q):
+        return [h["path"] for h in json.loads(run(["-p", "t", "find", q, "--json"])[1])["hits"]]
+
+    def test_the_source_ranks_above_its_tests_unless_tests_are_asked_for(self):
+        self.assertTrue(self.paths("where is gzip decoding of response bodies done")[0].endswith("app/decoders.py"))
+        self.assertTrue(self.paths("the tests for gzip decoding")[0].endswith("tests/test_decoders.py"))
+
+    def test_paths_are_short_inside_the_working_folder(self):
+        was = os.getcwd()
+        os.chdir(self.repo)
+        try:
+            hits = self.paths("gzip decoding")
+        finally:
+            os.chdir(was)
+        self.assertIn("app/decoders.py", hits)                   # relative to where the agent runs
+
+    def test_starter_text_is_never_an_answer(self):
+        self.assertFalse(any("wiki/" in p for p in self.paths("what happens at every session start")))
+        rules = self.wiki / "rules.md"
+        rules.write_text(rules.read_text(encoding="utf-8").replace("## Top\n", "## Top\n- Ask before every deploy\n"),
+                         encoding="utf-8")
+        run(["-p", "t", "index"])
+        self.assertIn("wiki/rules.md", self.paths("ask before every deploy"))
+
+    def test_question_intents_and_identifier_words(self):
+        self.assertTrue(wants_code("where is that header masked?") and not wants_code("where do I set a timeout?"))
+        self.assertTrue(wants_tests("which tests cover redirects") and not wants_tests("test my app in unit tests"))
+        self.assertIn("gzip", split_ident("GZipDecoder").split())
+        self.assertIn("ipv6", split_ident("IPv6Address").split())

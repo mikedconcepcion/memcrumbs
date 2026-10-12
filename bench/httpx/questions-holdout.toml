@@ -1,0 +1,201 @@
+# httpx holdout questions, written blind; not to be read before the final run. Repo: encode/httpx @ b5addb64.
+
+# ---- howto (docs) ----
+
+[[q]]
+id = "ho-doc-01"
+q = "How can I show a progress bar while a big file is downloading?"
+expect = ["docs/advanced/clients.md#Monitoring download progress"]
+category = "howto"
+
+[[q]]
+id = "ho-doc-02"
+q = "How do I talk to a local daemon through a unix socket file instead of TCP?"
+expect = ["docs/advanced/transports.md#HTTP Transport"]
+category = "howto"
+
+[[q]]
+id = "ho-doc-03"
+q = "How do I hit my Flask app from tests without starting a real server?"
+expect = ["docs/advanced/transports.md#WSGI Transport"]
+category = "howto"
+
+[[q]]
+id = "ho-doc-04"
+q = "Responses without a charset come out as mojibake; can the library guess the right encoding?"
+expect = ["docs/advanced/text-encodings.md#Using auto-detection"]
+category = "howto"
+
+[[q]]
+id = "ho-doc-05"
+q = "When the API returns 401 I want to grab a new token and resend automatically. How?"
+expect = ["docs/advanced/authentication.md#Custom authentication schemes"]
+category = "howto"
+
+[[q]]
+id = "ho-doc-06"
+q = "Can I use the operating system's trusted root certificates instead of the bundled CA list?"
+expect = ["docs/advanced/ssl.md#Configuring client instances"]
+category = "howto"
+
+[[q]]
+id = "ho-doc-07"
+q = "Our network only lets traffic out through a socks5 gateway. How do I set that up?"
+expect = ["docs/advanced/proxies.md#SOCKS"]
+category = "howto"
+
+[[q]]
+id = "ho-doc-08"
+q = "Fake the responses for one third-party domain while every other host still goes to the network."
+expect = ["docs/advanced/transports.md#Mounting transports"]
+category = "howto"
+
+[[q]]
+id = "ho-doc-09"
+q = "How can I tell which TLS version and server IP address a response actually came over?"
+expect = ["docs/advanced/extensions.md#network_stream"]
+category = "howto"
+
+[[q]]
+id = "ho-doc-10"
+q = "How do I make a client automatically raise on any 4xx or 5xx without checking each call?"
+expect = ["docs/advanced/event-hooks.md"]
+category = "howto"
+
+[[q]]
+id = "ho-doc-11"
+q = "How do I get debug output from httpx and the underlying network library through Python's logging?"
+expect = ["docs/logging.md"]
+category = "howto"
+
+[[q]]
+id = "ho-doc-12"
+q = "With the async client, how do I pipe an upstream response into a Starlette streaming endpoint?"
+expect = ["docs/async.md#Streaming responses"]
+category = "howto"
+
+# ---- code location / implementation ----
+
+[[q]]
+id = "ho-code-01"
+q = "Which code decides to switch a POST into a GET when following a 302 or 303?"
+expect = ["httpx/_client.py"]
+category = "code"
+
+[[q]]
+id = "ho-code-02"
+q = "Where do low-level httpcore errors get translated into httpx's own exception classes?"
+expect = ["httpx/_transports/default.py"]
+category = "code"
+
+[[q]]
+id = "ho-code-03"
+q = "Where is the random multipart boundary generated and the upload's total length computed?"
+expect = ["httpx/_multipart.py"]
+category = "code"
+
+[[q]]
+id = "ho-code-04"
+q = "Which module unpacks compressed response bodies like gzip, brotli or zstd?"
+expect = ["httpx/_decoders.py"]
+category = "code"
+
+[[q]]
+id = "ho-code-05"
+q = "Which function turns the proxy settings from my environment into routing rules?"
+expect = ["httpx/_utils.py"]
+category = "code"
+
+[[q]]
+id = "ho-code-06"
+q = "Where is the server's digest challenge parsed and the hashed credentials header built?"
+expect = ["httpx/_auth.py"]
+category = "code"
+
+[[q]]
+id = "ho-code-07"
+q = "Where are the command-line tool's flags like --download and --follow-redirects defined?"
+expect = ["httpx/_main.py"]
+category = "code"
+
+[[q]]
+id = "ho-code-08"
+q = "Where does the in-process WSGI transport assemble the environ dict passed to the app?"
+expect = ["httpx/_transports/wsgi.py"]
+category = "code"
+
+[[q]]
+id = "ho-code-09"
+q = "Where do non-ASCII hostnames get converted to punycode?"
+expect = ["httpx/_urlparse.py"]
+category = "code"
+
+[[q]]
+id = "ho-code-10"
+q = "Where is a json= payload serialized and its Content-Type header chosen?"
+expect = ["httpx/_content.py"]
+category = "code"
+
+# ---- behaviour / defaults / configuration ----
+
+[[q]]
+id = "ho-beh-01"
+q = "Out of the box, how many connections does the pool allow, and how long do idle ones live?"
+expect = ["docs/advanced/resource-limits.md", "httpx/_config.py"]
+category = "behaviour"
+
+[[q]]
+id = "ho-beh-02"
+q = "How many redirect hops will a client follow before it gives up with an error?"
+expect = ["httpx/_config.py"]
+category = "behaviour"
+
+[[q]]
+id = "ho-beh-03"
+q = "Does httpx automatically use proxy variables from my shell, and how do I turn that off?"
+expect = ["docs/environment_variables.md"]
+category = "behaviour"
+
+[[q]]
+id = "ho-beh-04"
+q = "When testing an ASGI app in-process, is the response body streamed incrementally or delivered in one piece?"
+expect = ["httpx/_transports/asgi.py"]
+category = "behaviour"
+
+[[q]]
+id = "ho-beh-05"
+q = "What User-Agent and Accept-Encoding headers does a client send if I set none?"
+expect = ["httpx/_client.py"]
+category = "behaviour"
+
+# ---- history / troubleshooting ----
+
+[[q]]
+id = "ho-hist-01"
+q = "After upgrading, my client stopped following redirects by itself. Which release changed that and why?"
+expect = ["CHANGELOG.md"]
+category = "history"
+
+[[q]]
+id = "ho-hist-02"
+q = "HTTPS calls through our corporate proxy fail with a TLS handshake timeout. How do I fix it?"
+expect = ["docs/troubleshooting.md"]
+category = "history"
+
+[[q]]
+id = "ho-hist-03"
+q = "Ported from requests: params whose value is None still get sent. Is that expected?"
+expect = ["docs/compatibility.md#Query Parameters"]
+category = "history"
+
+[[q]]
+id = "ho-hist-04"
+q = "Snapshot tests comparing exact JSON request bodies broke after an upgrade. What changed?"
+expect = ["CHANGELOG.md"]
+category = "history"
+
+[[q]]
+id = "ho-hist-05"
+q = "Setting HTTPX_LOG_LEVEL no longer prints anything after upgrading. What happened to it?"
+expect = ["CHANGELOG.md"]
+category = "history"

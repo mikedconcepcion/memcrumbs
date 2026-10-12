@@ -45,12 +45,12 @@ def find(out, project, store, q, kinds=None, limit=8, track=True):
     out.list_key = "hits"
     cache, cited, rows = {}, {}, []
     for h in hits:
-        rows.append(dict(kind=h["kind"], path=project.rel(h["path"]), line=h["loc"], title=h["title"],
+        rows.append(dict(kind=h["kind"], path=project.show(h["path"]), line=h["loc"], title=h["title"],
                          section=h["section"], snippet=clip(h["snippet"], 220), verified=h["verified"],
                          status=h["status"], label=freshness.label(project, h, cache=cache)))
         if h.get("see"):
             see = h["see"]
-            rows[-1]["see"] = dict(path=project.rel(see["path"]), line=see["loc"], title=see["title"], section=see["section"])
+            rows[-1]["see"] = dict(path=project.show(see["path"]), line=see["loc"], title=see["title"], section=see["section"])
         if h["kind"] == "code":                 # what the wiki records about this file, once per file
             if h["path"] not in cited:
                 cited[h["path"]] = cites.summary(store, project, h["path"])

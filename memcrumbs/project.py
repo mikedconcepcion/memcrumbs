@@ -69,6 +69,17 @@ class Project:
         """True if [security] never_index forbids indexing or printing this file."""
         return is_blocked(path, self.never_index)
 
+    def show(self, path, cwd=None):
+        """The path an agent reads: wiki-relative for wiki pages, relative to the working folder for a file inside
+        it (shorter, and what the agent's tools resolve), else absolute."""
+        r = self.rel(path)
+        if r.startswith("wiki/"):
+            return r
+        try:
+            return posix(Path(path).relative_to(cwd or Path.cwd()))
+        except ValueError:
+            return r
+
     def rel(self, path):
         """Short display path: wiki-relative for wiki pages, else absolute posix."""
         p = Path(path)

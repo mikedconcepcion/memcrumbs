@@ -31,6 +31,9 @@ calls and runs no background service; it uses the network only to update itself 
   AGENTS.md.
 
 ## Measured (repository benchmarks)
+- A public repository before any wiki page is written (encode/httpx @ b5addb64): the answer in the top 3 for 75% of
+  32 held-out questions written blind (code questions 90%), about 380 tokens per answer, against a median of 2,410
+  for reading the one file that holds it. Method and data: https://github.com/mikedconcepcion/memcrumbs/tree/main/bench/httpx
 - Recall@3 0.95 on 40 held-out questions written blind, on the invented sample project.
 - About 450 tokens per lookup answer (mean over 100 sample questions, estimated as characters / 4).
 - 10,000-file repository: full index 5-10 s, `find` 25-100 ms.

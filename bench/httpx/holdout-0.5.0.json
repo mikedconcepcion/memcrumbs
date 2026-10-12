@@ -1,0 +1,187 @@
+{
+ "repo": "encode/httpx",
+ "commit": "b5addb64f0161ff6bfe94c124ef76f6a1fba5254",
+ "memcrumbs": "memcrumbs 0.5.0",
+ "questions": 32,
+ "bench": {
+  "n": 32,
+  "recall_at_1": 0.312,
+  "recall_at_3": 0.625,
+  "recall_at_3_with_pointers": 0.625,
+  "mrr": 0.497,
+  "tokens_mean": 586,
+  "tokens_p95": 623,
+  "ms_mean": 9.0,
+  "ms_p95": 14.7
+ },
+ "by_category": {
+  "behaviour": {
+   "n": 5,
+   "recall_at_1": 0.4,
+   "recall_at_3": 0.8,
+   "recall_at_3_with_pointers": 0.8,
+   "mrr": 0.6,
+   "tokens_mean": 594,
+   "tokens_p95": 600,
+   "ms_mean": 12.6,
+   "ms_p95": 15.3
+  },
+  "code": {
+   "n": 10,
+   "recall_at_1": 0.1,
+   "recall_at_3": 0.6,
+   "recall_at_3_with_pointers": 0.6,
+   "mrr": 0.378,
+   "tokens_mean": 598,
+   "tokens_p95": 623,
+   "ms_mean": 6.0,
+   "ms_p95": 12.5
+  },
+  "history": {
+   "n": 5,
+   "recall_at_1": 0.6,
+   "recall_at_3": 1.0,
+   "recall_at_3_with_pointers": 1.0,
+   "mrr": 0.8,
+   "tokens_mean": 588,
+   "tokens_p95": 599,
+   "ms_mean": 10.9,
+   "ms_p95": 14.7
+  },
+  "howto": {
+   "n": 12,
+   "recall_at_1": 0.333,
+   "recall_at_3": 0.417,
+   "recall_at_3_with_pointers": 0.417,
+   "mrr": 0.426,
+   "tokens_mean": 572,
+   "tokens_p95": 613,
+   "ms_mean": 9.1,
+   "ms_p95": 13.8
+  }
+ },
+ "file_tokens_median": 2410,
+ "file_tokens_mean": 4060,
+ "misses": [
+  [
+   "ho-doc-03",
+   null,
+   "How do I hit my Flask app from tests without starting a real server?",
+   [
+    "docs/advanced/transports.md",
+    "tests/test_wsgi.py",
+    "tests/conftest.py"
+   ]
+  ],
+  [
+   "ho-doc-04",
+   null,
+   "Responses without a charset come out as mojibake; can the library guess the right encoding?",
+   [
+    "tests/models/test_responses.py",
+    "httpx/_models.py",
+    "docs/advanced/text-encodings.md"
+   ]
+  ],
+  [
+   "ho-doc-06",
+   4,
+   "Can I use the operating system's trusted root certificates instead of the bundled CA list?",
+   [
+    "docs/advanced/ssl.md",
+    "docs/environment_variables.md",
+    "wiki/index.md"
+   ]
+  ],
+  [
+   "ho-doc-07",
+   6,
+   "Our network only lets traffic out through a socks5 gateway. How do I set that up?",
+   [
+    "docs/compatibility.md",
+    "docs/advanced/transports.md",
+    "CHANGELOG.md"
+   ]
+  ],
+  [
+   "ho-doc-08",
+   null,
+   "Fake the responses for one third-party domain while every other host still goes to the network.",
+   [
+    "docs/advanced/extensions.md",
+    "docs/advanced/clients.md",
+    "wiki/rules.md"
+   ]
+  ],
+  [
+   "ho-doc-09",
+   null,
+   "How can I tell which TLS version and server IP address a response actually came over?",
+   [
+    "docs/advanced/extensions.md",
+    "docs/http2.md",
+    "docs/contributing.md"
+   ]
+  ],
+  [
+   "ho-doc-10",
+   5,
+   "How do I make a client automatically raise on any 4xx or 5xx without checking each call?",
+   [
+    "tests/client/test_event_hooks.py",
+    "CHANGELOG.md",
+    "tests/client/test_event_hooks.py"
+   ]
+  ],
+  [
+   "ho-code-01",
+   4,
+   "Which code decides to switch a POST into a GET when following a 302 or 303?",
+   [
+    "tests/client/test_redirects.py",
+    "tests/test_main.py",
+    "httpx/_api.py"
+   ]
+  ],
+  [
+   "ho-code-04",
+   5,
+   "Which module unpacks compressed response bodies like gzip, brotli or zstd?",
+   [
+    "tests/test_decoders.py",
+    "docs/index.md",
+    "tests/test_decoders.py"
+   ]
+  ],
+  [
+   "ho-code-09",
+   null,
+   "Where do non-ASCII hostnames get converted to punycode?",
+   [
+    "tests/models/test_headers.py",
+    "httpx/_utils.py",
+    "tests/models/test_url.py"
+   ]
+  ],
+  [
+   "ho-code-10",
+   6,
+   "Where is a json= payload serialized and its Content-Type header chosen?",
+   [
+    "docs/api.md",
+    "docs/quickstart.md",
+    "tests/test_multipart.py"
+   ]
+  ],
+  [
+   "ho-beh-02",
+   null,
+   "How many redirect hops will a client follow before it gives up with an error?",
+   [
+    "tests/client/test_redirects.py",
+    "httpx/_exceptions.py",
+    "tests/test_main.py"
+   ]
+  ]
+ ]
+}

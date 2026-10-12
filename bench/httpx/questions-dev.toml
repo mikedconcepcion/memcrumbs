@@ -1,0 +1,201 @@
+# httpx dev questions (for tuning), written blind. Repo: encode/httpx @ b5addb64.
+
+# ---------------------------------------------------------------- howto (docs)
+
+[[q]]
+id = "dev-doc-01"
+q = "Can I point a client at a local socket file, like the Docker engine's, instead of a TCP host?"
+expect = ["docs/advanced/transports.md#HTTP Transport"]
+category = "howto"
+
+[[q]]
+id = "dev-doc-02"
+q = "Show a live progress bar while saving a huge file the server sends back."
+expect = ["docs/advanced/clients.md#Monitoring download progress"]
+category = "howto"
+
+[[q]]
+id = "dev-doc-03"
+q = "Our internal API wants the caller to present its own certificate. How do I attach one?"
+expect = ["docs/advanced/ssl.md#Client side certificates"]
+category = "howto"
+
+[[q]]
+id = "dev-doc-04"
+q = "How do I exercise my Flask app in unit tests by sending requests straight into it, no running server?"
+expect = ["docs/advanced/transports.md#WSGI Transport"]
+category = "howto"
+
+[[q]]
+id = "dev-doc-05"
+q = "Our outbound proxy requires a login. Where do I put the username and password?"
+expect = ["docs/advanced/proxies.md#Authentication"]
+category = "howto"
+
+[[q]]
+id = "dev-doc-06"
+q = "When the access token expires the API answers 401; how do I refresh it and replay the call automatically?"
+expect = ["docs/advanced/authentication.md#Custom authentication schemes"]
+category = "howto"
+
+[[q]]
+id = "dev-doc-07"
+q = "A legacy site sends no charset and the text comes out garbled. Can httpx guess the encoding?"
+expect = ["docs/advanced/text-encodings.md#Using auto-detection"]
+category = "howto"
+
+[[q]]
+id = "dev-doc-08"
+q = "Let a slow host take up to a minute to accept the connection, but keep other waits at 10 seconds."
+expect = ["docs/advanced/timeouts.md#Fine tuning the configuration"]
+category = "howto"
+
+[[q]]
+id = "dev-doc-09"
+q = "I must hit a server by raw IP address but still have certificate checks use its real hostname."
+expect = ["docs/advanced/extensions.md#sni_hostname"]
+category = "howto"
+
+[[q]]
+id = "dev-doc-10"
+q = "Which logger names do I configure to see connection-level debug output from the library?"
+expect = ["docs/logging.md"]
+category = "howto"
+
+[[q]]
+id = "dev-doc-11"
+q = "How do I run my own function on every outgoing call and every reply, e.g. to stamp a header?"
+expect = ["docs/advanced/event-hooks.md"]
+category = "howto"
+
+[[q]]
+id = "dev-doc-12"
+q = "While streaming, how do I load the whole body only when the reported size is small enough?"
+expect = ["docs/quickstart.md#Streaming Responses"]
+category = "howto"
+
+# ---------------------------------------------------------------- code location
+
+[[q]]
+id = "dev-code-01"
+q = "Where does the client decide to turn a POST into a GET after a 302 or 303?"
+expect = ["httpx/_client.py"]
+category = "code"
+
+[[q]]
+id = "dev-code-02"
+q = "Which code converts low-level httpcore errors into the httpx exception classes?"
+expect = ["httpx/_transports/default.py"]
+category = "code"
+
+[[q]]
+id = "dev-code-03"
+q = "Where do compressed response bodies get unpacked, and which compression schemes are supported?"
+expect = ["httpx/_decoders.py"]
+category = "code"
+
+[[q]]
+id = "dev-code-04"
+q = "Where is the random separator for file upload forms generated, and the file's MIME type guessed?"
+expect = ["httpx/_multipart.py"]
+category = "code"
+
+[[q]]
+id = "dev-code-05"
+q = "Which function picks between form-encoded, multipart, JSON or raw bytes when building a request body?"
+expect = ["httpx/_content.py"]
+category = "code"
+
+[[q]]
+id = "dev-code-06"
+q = "Where does the command-line tool define its flags like --download and --no-verify?"
+expect = ["httpx/_main.py"]
+category = "code"
+
+[[q]]
+id = "dev-code-07"
+q = "Where are non-ASCII hostnames converted to punycode when a URL is parsed?"
+expect = ["httpx/_urlparse.py"]
+category = "code"
+
+[[q]]
+id = "dev-code-08"
+q = "Printing headers shows [secure] instead of my token. Where is that masking done?"
+expect = ["httpx/_models.py"]
+category = "code"
+
+[[q]]
+id = "dev-code-09"
+q = "My streaming endpoint arrives all at once when tested through the in-process async app transport. What buffers it?"
+expect = ["httpx/_transports/asgi.py"]
+category = "code"
+
+[[q]]
+id = "dev-code-10"
+q = "Which hash algorithms does digest login support, and where is the server challenge parsed?"
+expect = ["httpx/_auth.py"]
+category = "code"
+
+# ---------------------------------------------------------------- behaviour / defaults
+
+[[q]]
+id = "dev-beh-01"
+q = "How many connections does a client pool by default, and how long are idle ones kept around?"
+expect = ["docs/advanced/resource-limits.md", "httpx/_config.py"]
+category = "behaviour"
+
+[[q]]
+id = "dev-beh-02"
+q = "How many redirect hops will a client follow before giving up with an error?"
+expect = ["httpx/_config.py"]
+category = "behaviour"
+
+[[q]]
+id = "dev-beh-03"
+q = "I turned on http2 but responses still report HTTP/1.1. Is something broken?"
+expect = ["docs/http2.md#Inspecting the HTTP version"]
+category = "behaviour"
+
+[[q]]
+id = "dev-beh-04"
+q = "If NO_PROXY is set to .example.com, does the bare example.com still go through the proxy?"
+expect = ["httpx/_utils.py"]
+category = "behaviour"
+
+[[q]]
+id = "dev-beh-05"
+q = "With the async client sending stream=True outside a with-block, who is responsible for closing the response?"
+expect = ["docs/async.md#Streaming responses"]
+category = "behaviour"
+
+# ---------------------------------------------------------------- history / troubleshooting
+
+[[q]]
+id = "dev-hist-01"
+q = "After upgrading, 301 responses are no longer followed on their own. Which release changed that, and why?"
+expect = ["CHANGELOG.md"]
+category = "history"
+
+[[q]]
+id = "dev-hist-02"
+q = "Client(proxies=...) fails after an upgrade. What replaced it, and when was it removed?"
+expect = ["CHANGELOG.md"]
+category = "history"
+
+[[q]]
+id = "dev-hist-03"
+q = "HTTPS calls via our corporate proxy stall during TLS setup and fail with ProxyError. How do I fix it?"
+expect = ["docs/troubleshooting.md#handshake operation timed out"]
+category = "history"
+
+[[q]]
+id = "dev-hist-04"
+q = "Our tests comparing request bodies broke: the JSON lost its spaces after commas. When did that change?"
+expect = ["CHANGELOG.md"]
+category = "history"
+
+[[q]]
+id = "dev-hist-05"
+q = "Porting from requests.Session, passing cookies on each client call warns about deprecation. What's the intended way?"
+expect = ["docs/compatibility.md#Cookies"]
+category = "history"

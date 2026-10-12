@@ -1,0 +1,147 @@
+{
+ "repo": "encode/httpx",
+ "commit": "b5addb64f0161ff6bfe94c124ef76f6a1fba5254",
+ "memcrumbs": "memcrumbs 0.5.1.dev0",
+ "questions": 32,
+ "bench": {
+  "n": 32,
+  "recall_at_1": 0.438,
+  "recall_at_3": 0.75,
+  "recall_at_3_with_pointers": 0.75,
+  "mrr": 0.605,
+  "tokens_mean": 377,
+  "tokens_p95": 424,
+  "ms_mean": 10.4,
+  "ms_p95": 18.6
+ },
+ "by_category": {
+  "behaviour": {
+   "n": 5,
+   "recall_at_1": 0.4,
+   "recall_at_3": 0.8,
+   "recall_at_3_with_pointers": 0.8,
+   "mrr": 0.6,
+   "tokens_mean": 384,
+   "tokens_p95": 417,
+   "ms_mean": 12.9,
+   "ms_p95": 16.0
+  },
+  "code": {
+   "n": 10,
+   "recall_at_1": 0.5,
+   "recall_at_3": 0.9,
+   "recall_at_3_with_pointers": 0.9,
+   "mrr": 0.7,
+   "tokens_mean": 371,
+   "tokens_p95": 481,
+   "ms_mean": 7.5,
+   "ms_p95": 19.2
+  },
+  "history": {
+   "n": 5,
+   "recall_at_1": 0.6,
+   "recall_at_3": 1.0,
+   "recall_at_3_with_pointers": 1.0,
+   "mrr": 0.8,
+   "tokens_mean": 378,
+   "tokens_p95": 414,
+   "ms_mean": 11.8,
+   "ms_p95": 15.5
+  },
+  "howto": {
+   "n": 12,
+   "recall_at_1": 0.333,
+   "recall_at_3": 0.5,
+   "recall_at_3_with_pointers": 0.5,
+   "mrr": 0.448,
+   "tokens_mean": 379,
+   "tokens_p95": 424,
+   "ms_mean": 11.1,
+   "ms_p95": 18.6
+  }
+ },
+ "file_tokens_median": 2410,
+ "file_tokens_mean": 4060,
+ "misses": [
+  [
+   "ho-doc-03",
+   null,
+   "How do I hit my Flask app from tests without starting a real server?",
+   [
+    "docs/advanced/transports.md",
+    "docs/advanced/extensions.md",
+    "docs/logging.md"
+   ]
+  ],
+  [
+   "ho-doc-04",
+   null,
+   "Responses without a charset come out as mojibake; can the library guess the right encoding?",
+   [
+    "httpx/_models.py",
+    "docs/advanced/text-encodings.md",
+    "tests/models/test_responses.py"
+   ]
+  ],
+  [
+   "ho-doc-07",
+   6,
+   "Our network only lets traffic out through a socks5 gateway. How do I set that up?",
+   [
+    "docs/compatibility.md",
+    "docs/advanced/transports.md",
+    "CHANGELOG.md"
+   ]
+  ],
+  [
+   "ho-doc-08",
+   null,
+   "Fake the responses for one third-party domain while every other host still goes to the network.",
+   [
+    "docs/advanced/extensions.md",
+    "docs/advanced/clients.md",
+    "docs/third_party_packages.md"
+   ]
+  ],
+  [
+   "ho-doc-09",
+   8,
+   "How can I tell which TLS version and server IP address a response actually came over?",
+   [
+    "docs/advanced/extensions.md",
+    "docs/http2.md",
+    "docs/contributing.md"
+   ]
+  ],
+  [
+   "ho-doc-10",
+   4,
+   "How do I make a client automatically raise on any 4xx or 5xx without checking each call?",
+   [
+    "CHANGELOG.md",
+    "tests/client/test_event_hooks.py",
+    "httpx/_exceptions.py"
+   ]
+  ],
+  [
+   "ho-code-09",
+   null,
+   "Where do non-ASCII hostnames get converted to punycode?",
+   [
+    "httpx/_utils.py",
+    "tests/models/test_headers.py",
+    "httpx/_utils.py"
+   ]
+  ],
+  [
+   "ho-beh-02",
+   null,
+   "How many redirect hops will a client follow before it gives up with an error?",
+   [
+    "httpx/_exceptions.py",
+    "docs/compatibility.md",
+    "httpx/_client.py"
+   ]
+  ]
+ ]
+}

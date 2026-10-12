@@ -1,6 +1,7 @@
 """Built-in sources: wiki pages, markdown doc trees, code symbols. A source yields (path, stamp, loader);
 loader() -> (docs, symbols). Every text a loader returns has passed the redactor; if redaction fails the
 loader raises and the file is not indexed (fail closed)."""
+import functools
 import re
 from dataclasses import dataclass
 from pathlib import Path
@@ -9,6 +10,8 @@ from memcrumbs import markdown, outline
 from memcrumbs.guard import instruction_like
 from memcrumbs.verdicts import row_status, section_verdict, verdict
 from memcrumbs.util import clip, posix, read_text, split_lines, stamp, walk_stat
+
+TEMPLATES = Path(__file__).parent / "templates"
 
 CODE_INCLUDE = ["**/*.py", "**/*.ps1", "**/*.psm1", "**/*.mq5", "**/*.mqh", "**/*.mq4"]
 FOLDER_KINDS = {"runbooks": "runbook", "decisions": "decision", "incidents": "incident", "journal": "journal",
@@ -40,6 +43,23 @@ def wiki_kind(project, path):
     return FOLDER_KINDS.get(top.lower(), "wiki")
 
 
+def _norm(text):
+    return " ".join(str(text).split()).lower()
+
+
+@functools.lru_cache(maxsize=1)
+def _boilerplate():
+    """The starter pages' own text (their summaries and guidance sentences, as `init` writes them): never a hit,
+    or on a new wiki every question with "every" or "page" in it finds the empty rules page first."""
+    out = set()
+    for name in ("rules.md", "gotchas.md", "index.md"):
+        meta, body, _ = markdown.frontmatter((TEMPLATES / name).read_text(encoding="utf-8"))
+        out.add(_norm(meta.get("summary") or ""))
+        out.update(_norm("\n".join(part)) for _, _, part in markdown.chunks(split_lines(body), 80))
+    out.discard("")
+    return out
+
+
 def md_docs(project, path, kind, text=None, max_lines=80):
     """Markdown file -> one Doc per heading chunk (+ a page-level Doc carrying title/summary/tags/aliases)."""
     text = read_text(path) if text is None else text
@@ -66,11 +86,14 @@ def md_docs(project, path, kind, text=None, max_lines=80):
     key = posix(path)
     docs = []
     summary = str(meta.get("summary") or "")
-    if summary or kind in ("wiki", "runbook", "decision", "incident"):
+    boiler = _boilerplate() if kind == "wiki" else ()
+    if (summary or kind in ("wiki", "runbook", "decision", "incident")) and _norm(summary) not in boiler:
         outline_txt = " · ".join(h for _, lvl, h in hs if lvl <= 3)[:600]
         docs.append(Doc(kind, key, 1, title, "symptom: " + symptom if symptom else "",
                         red("%s\n%s" % (summary, outline_txt)), tags, verified, status, flags, cites=red(words("sources"))))
     for start, head, part in markdown.chunks(lines, max_lines):
+        if not any(ln.strip() and not ln.lstrip().startswith("#") for ln in part) or _norm("\n".join(part)) in boiler:
+            continue                                     # a heading with nothing under it, or starter text
         docs.append(Doc(kind, key, start + 1 + fm_lines, title, red(head), red("\n".join(part)), tags, verified,
                         row_status(part) or verdict(head) or verdict("\n".join(part[:12]), lines_only=True) or status,
                         flags))
@@ -102,7 +125,8 @@ def split_ident(s):
     """Identifier words, so `issue_refund`, `ProfileValidator` and `Register-Tasks` match "refund", "validator",
     "tasks" (the tokenizer keeps `issue_refund` whole for exact lookups)."""
     s = re.sub(r"(?<=[a-z0-9])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])", " ", s)
-    return " ".join(w for w in re.split(r"[^A-Za-z0-9]+", s.lower()) if w)
+    words = [w for w in re.split(r"[^A-Za-z0-9]+", s.lower()) if w]
+    return " ".join(words + [a + b for a, b in zip(words, words[1:]) if len(a) == 1])   # GZip: "gzip" too
 
 
 def code_docs(project, path):

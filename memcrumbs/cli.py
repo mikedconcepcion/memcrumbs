@@ -9,7 +9,7 @@ from memcrumbs.cli_args import NO_PROJECT, build_parser
 from memcrumbs.output import Out
 from memcrumbs.redact import Redactor, secret_hash
 from memcrumbs.store import IndexBroken, Locked, Store
-from memcrumbs.util import utf8_stdout
+from memcrumbs.util import posix, utf8_stdout
 
 READS = ("find", "page", "sym", "bench", "about")
 SCAN_AFTER = ("check", "index", "dashboard", "doctor", "log", "decision", "incident", "verify", "supersede")
@@ -52,7 +52,9 @@ def open_store(project, broken_ok=False):
     err, before = None, _state(project.index_path)
     for i in range(BROKEN_RETRIES):
         try:
-            return Store(project.index_path, table), None
+            store = Store(project.index_path, table)
+            store.roots = tuple(posix(r).lower().rstrip("/") + "/" for r in project.repos)
+            return store, None
         except Locked as e:
             return None, "index locked: %s" % e
         except IndexBroken as e:

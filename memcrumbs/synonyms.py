@@ -60,6 +60,8 @@ approve, approval, sign off, sign-off, consent
 production, prod, live
 staging, stage
 environment, env
+decompress, decode, unpack, inflate
+mask, obfuscate, redact
 """
 
 

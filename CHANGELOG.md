@@ -3,6 +3,25 @@
 What changed for users, newest first. Versions follow [semver](https://semver.org/) from 1.0; before 1.0 the
 command line and config may still change, and every such change is listed here.
 
+## [0.5.1] — 2026-10-12
+
+### Added
+
+- **`scripts/day0.py`:** measures what `init` alone gives on any repository, with your questions: recall and tokens
+  per answer, against reading each answering file whole. The httpx questions and results are in `bench/httpx`.
+
+### Changed
+
+- **Better answers on a repo with no wiki written yet.** On a public repo (httpx) with 32 questions written
+  blind, the answer was in the top 3 for 75% of them, up from 62%, and for 90% of the code questions, up from
+  60%. Answers use about a third fewer tokens.
+  - A test file ranks below the code it tests, unless you ask for tests.
+  - `find` shows paths relative to the folder you work in.
+  - "Where is … done?" questions look in the code first.
+  - Code names match their words (`GZipDecoder` matches "gzip").
+  - The empty starter pages no longer answer questions.
+- The index is rebuilt once, a few seconds, on the first command after the upgrade.
+
 ## [0.5.0] — 2026-10-12
 
 ### Added

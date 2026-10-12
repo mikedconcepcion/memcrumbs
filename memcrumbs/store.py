@@ -4,15 +4,17 @@ The index is a disposable cache: it carries a schema version and is rebuilt on a
 raises IndexBroken so the caller can rebuild it or answer from the files. Writers take short, explicit
 transactions; readers never wait for them (WAL)."""
 import contextlib
+import re
 import sqlite3
 import time
 from pathlib import Path
 
 from memcrumbs import cites, rank
-from memcrumbs.query import fts_query, split_filters, term_pairs, wants_code, wants_procedure  # fts_query is re-exported: store.fts_query
+from memcrumbs.query import (fts_query, split_filters, term_pairs, wants_code, wants_procedure,  # fts_query is re-exported
+                             wants_tests)
 from memcrumbs.synonyms import TABLE
 
-SCHEMA_VERSION = 7
+SCHEMA_VERSION = 8
 ROWID_BITS = 20                       # up to ~1M docs per file
 _TABLES = (
     "CREATE TABLE IF NOT EXISTS files(id INTEGER PRIMARY KEY, path TEXT UNIQUE, source TEXT, stamp TEXT)",
@@ -39,6 +41,9 @@ COVERAGE_FLOOR = 0.5             # score x (floor + IDF-weighted share of query 
 CODE_INTENT_BOOST = 2.5          # code hits when the question asks for code ("which function …")
 PROCEDURE_BOOST = 1.5            # runbook hits when the question asks for steps ("how do I …")
 SAME_FILE_DECAY = 0.5            # each further hit from one file scores half the one before
+TEST_FACTOR = 0.5                # a test file scores half, unless the question is about tests: tests restate the
+TEST_PATH = re.compile(r"/(tests?|testing|__tests__|specs?)/|/test_[^/]*$|_test\.\w+$|\.(test|spec)\.\w+$", re.I)
+                                 # words of the code they test, and the answer is usually the code
 CANDIDATES = 300
 
 
@@ -98,6 +103,7 @@ class Store:
     def __init__(self, path, synonyms=TABLE):
         self.path = Path(path)
         self.synonyms = synonyms                                    # query expansion table (synonyms.build)
+        self.roots = ()                  # the project's repos ("c:/code/app/"): a test path is judged inside them
         self.path.parent.mkdir(parents=True, exist_ok=True)
         try:
             self.db = sqlite3.connect(str(path), timeout=30, isolation_level=None)   # explicit transactions
@@ -262,6 +268,12 @@ class Store:
             h["snippet"] = _first_line(h["snippet"])
         return self.attach_fresh((pages + parts)[:limit])
 
+    def _test(self, path):
+        s = str(path).replace("\\", "/").lower()
+        root = next((r for r in self.roots if s.startswith(r)), None)
+        s = s[len(root) - 1:] if root else "/" + "/".join(s.split("/")[-3:])
+        return bool(TEST_PATH.search(s))
+
     def search(self, q, kinds=None, limit=8, per_path=2):
         """Ranked hits as dicts: kind, path, loc, title, section, snippet, verified, status, flags, score.
         Candidates match any query term (BM25 favours docs matching more, and rarer, terms); docs that match
@@ -283,10 +295,12 @@ class Store:
             rank.damp(dict(self._match(plain, kinds, CANDIDATES, "rowid, " + _BM25, filters)), hits)
         ids = [h["rowid"] for h in hits]
         cover, known = rank.coverage(self.db, pairs, ids, int(self.get_meta("ndocs", 0) or 0))
-        code, proc = wants_code(q), wants_procedure(q)
+        code, proc, tests = wants_code(q), wants_procedure(q), wants_tests(q)
         for h in hits:
             intent = (CODE_INTENT_BOOST if code and h["kind"] == "code" else
                       PROCEDURE_BOOST if proc and h["kind"] == "runbook" else 1.0)
+            if not tests and self._test(h["path"]):
+                intent *= TEST_FACTOR
             h["score"] = h["score"] * BOOST.get(h["kind"], 1.0) * STATUS_BOOST.get(h["status"], 1.0) * (
                 COVERAGE_FLOOR + cover.get(h["rowid"], 1.0)) * intent
             h["answers"] = round(cover.get(h["rowid"], 1.0) * known, 3)     # how much of the question it holds

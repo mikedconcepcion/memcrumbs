@@ -9,35 +9,28 @@ system, and sometimes they leak a secret.
 
 memcrumbs gives each project a memory that stays small, current and safe.
 
-## What it does for you
+## Start in five minutes
 
-- **Your agent starts every session knowing the rules.** A short header (under 1,000 tokens) brings your
-  standing rules, the project map, the top gotchas and recent journal lines, so "never deploy on Friday" is
-  read before anything else.
-- **Answers instead of file dumps.** `memcrumbs find "how do I roll back a bad deploy"` returns a few ranked hits
-  with `path:line`, how old each one is and whether it is still current. The agent then opens one section or
-  one function, not a 4,000-line file.
-- **It remembers what happened and why.** Decisions (including the ones you rejected), incidents with the
-  symptom someone will see next time, runbooks, and a dated journal. Asking "did we ever try Postgres?" finds
-  the rejected decision instead of a fresh attempt.
-- **It knows when it may be wrong.** Every hit says how long ago it was verified, flags `STALE` pages, and says
-  `SRC-CHANGED` when the code a page describes changed after the page was checked.
-- **It tells the agent what the wiki says about a file before it edits it.** `memcrumbs about deploy.ps1` lists
-  the decisions, incidents and gotchas that mention it.
-- **It keeps one current value per fact.** Versions, ports and hosts live in one table, optionally read straight
-  from the source file, and `check` flags pages that still state an old value.
-- **It notices things for you, and asks first.** `memcrumbs suggest` offers near-duplicate pages to merge,
-  questions the wiki could not answer, gotchas that can become permission prompts, task flows and pipelines you
-  keep repeating that could become a skill, and auto-memory notes the wiki already holds. Once a day the header
-  pings with a count; the offers are listed only when you ask. Nothing changes until you say yes, and every
-  change can be undone byte for byte.
-- **Your secrets stay out.** Everything indexed, printed or written is redacted; `.env` files and keys are never
-  indexed; `memcrumbs scan` checks a folder or a package before you publish it.
-- **You stay in control of token spend.** Re-indexing is free and local. Rewriting stale pages is agent work, so
-  `memcrumbs plan` and the dashboard let you pick the pages and the budget.
+```bash
+pip install memcrumbs
+cd /code/myapp && memcrumbs init
+```
 
-Standard library only: no model calls, no background service, no per-tool-call hooks, and no network use except
-`memcrumbs update`, when you run it. Your wiki is plain markdown in your own folder.
+Three things work from the first session:
+
+- **Rules first, every session.** A short header (under 1,000 tokens) brings your standing rules, the project
+  map and the top gotchas, so "never deploy on Friday" is read before anything else. In the first session the
+  agent drafts the rules from CLAUDE.md, the README and the code, and you approve them with `/memcrumbs-review`.
+- **Answers instead of file dumps.** `memcrumbs find "how do I roll back a bad deploy"` searches your repo's
+  docs and code symbols from the start, before you write a single wiki page, and returns a few ranked hits with
+  `path:line`, how old each one is and whether it is still current. The agent then opens one section or one
+  function, not a 4,000-line file. On httpx, with no wiki page written, the answer was in the top 3 for 75% of
+  32 questions written blind (90% of the code questions), at about 380 tokens per answer; reading the one file
+  that holds it costs a median of 2,410 ([method and data](https://github.com/mikedconcepcion/memcrumbs/tree/main/bench/httpx)).
+- **What the wiki says about a file, before an edit.** `memcrumbs about deploy.ps1` lists the decisions,
+  incidents and gotchas that cite it. It has more to say as you record them.
+
+That is the whole minimal setup. Everything under [When you need more](#when-you-need-more) is optional.
 
 ## What it looks like
 
@@ -60,6 +53,30 @@ EmberOps.psm1 — cited by 1 decision (ACCEPTED), 2 incidents, 1 runbook
 
 (From the invented sample project in `bench/kiln`.)
 
+## When you need more
+
+- **It remembers what happened and why.** Decisions (including the ones you rejected), incidents with the
+  symptom someone will see next time, runbooks, and a dated journal. Asking "did we ever try Postgres?" finds
+  the rejected decision instead of a fresh attempt.
+- **It knows when it may be wrong.** Every hit says how long ago it was verified, flags `STALE` pages, and says
+  `SRC-CHANGED` when the code a page describes changed after the page was checked.
+- **It keeps one current value per fact.** Versions, ports and hosts live in one table, optionally read straight
+  from the source file, and `check` flags pages that still state an old value.
+- **You approve what the agent writes.** Rules and gotchas an agent adds reach the header only after you
+  approve them, in the session with `/memcrumbs-review`; Claude Code asks you before each approval runs.
+- **It notices things for you, and asks first.** `memcrumbs suggest` offers near-duplicate pages to merge,
+  questions the wiki could not answer, gotchas that can become permission prompts, task flows and pipelines you
+  keep repeating that could become a skill, and auto-memory notes the wiki already holds. Once a day the header
+  pings with a count; the offers are listed only when you ask. Nothing changes until you say yes, and every
+  change can be undone byte for byte.
+- **Your secrets stay out.** Everything indexed, printed or written is redacted; `.env` files and keys are never
+  indexed; `memcrumbs scan` checks a folder or a package before you publish it.
+- **You stay in control of token spend.** Re-indexing is free and local. Rewriting stale pages is agent work, so
+  `memcrumbs plan` and the dashboard let you pick the pages and the budget.
+
+Standard library only: no model calls, no background service, no per-tool-call hooks, and no network use except
+`memcrumbs update`, when you run it. Your wiki is plain markdown in your own folder.
+
 ## Install
 
 ```bash
@@ -75,12 +92,7 @@ Your wikis live outside the package, in `~/.memcrumbs/projects` by default. To k
 example a private git repo), set `projects_dir` in `~/.memcrumbs/config.toml` or the `MEMCRUMBS_PROJECTS`
 environment variable.
 
-## Quick start
-
-```bash
-pip install memcrumbs
-cd /code/myapp && memcrumbs init
-```
+## What `init` does
 
 `init` names the project after the repo, writes a starter wiki with a map drafted from the repo (README,
 languages, folders, tests, CI), indexes the code and the repo's markdown, and checks the result. It asks once

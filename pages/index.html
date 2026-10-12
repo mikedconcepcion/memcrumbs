@@ -29,7 +29,7 @@
  "downloadUrl": "https://pypi.org/project/memcrumbs/",
  "applicationCategory": "DeveloperApplication",
  "operatingSystem": "Windows, macOS, Linux",
- "softwareVersion": "0.5.0",
+ "softwareVersion": "0.5.1",
  "license": "https://www.apache.org/licenses/LICENSE-2.0",
  "programmingLanguage": "Python",
  "softwareRequirements": "Python 3.11 or newer",
@@ -116,6 +116,14 @@
    "acceptedAnswer": {
     "@type": "Answer",
     "text": "Auto-memory is notes an agent keeps for itself. memcrumbs keeps a curated wiki with age and status on every answer, searched on demand instead of loaded in full. It can also offer to replace auto-memory notes the wiki already holds with a pointer to the page."
+   }
+  },
+  {
+   "@type": "Question",
+   "name": "How useful is it on a repository with no wiki yet?",
+   "acceptedAnswer": {
+    "@type": "Answer",
+    "text": "From the first session, find searches the repository's own docs and code symbols. On httpx, before any wiki page was written, the answer was in the top 3 for 75% of 32 questions written blind (90% of the code questions), at about 380 tokens per answer; reading the one file that holds the answer costs a median of 2,410 tokens. Rules, gotchas and decisions you add make it better from there."
    }
   },
   {
@@ -227,6 +235,7 @@ h3 { font: 600 18px/1.3 var(--display); margin: 0 0 6px; letter-spacing: -.01em;
 .define { max-width: 46em; font-size: 18px; }
 .define strong { color: var(--pine); }
 
+.intro.tier { margin-top: 40px; }
 .grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 28px 34px; }
 @media (max-width: 900px) { .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 600px) { .grid { grid-template-columns: minmax(0, 1fr); } }
@@ -297,7 +306,8 @@ footer .right { margin-left: auto; }
         <h1>Project memory for <span class="soft">coding agents</span></h1>
         <p class="lede">memcrumbs is an open-source command-line tool that gives coding agents such as Claude Code a project
           memory: a small markdown wiki the agent reads before your code, and a local index that answers questions in a few
-          hundred tokens. It uses only Python's standard library, and the network only to update itself.</p>
+          hundred tokens. It uses only Python's standard library, and the network only to update itself. Two commands
+          and five minutes give your agent a header of your rules that it reads first, every session.</p>
         <div class="install">
           <code id="install-cmd">pip install memcrumbs</code>
           <button type="button" id="copy-btn">Copy</button>
@@ -339,6 +349,8 @@ EmberOps.psm1 — cited by 1 decision (ACCEPTED), 2 incidents, 1 runbook</pre>
         and a full documentation site, and it borrows from practices teams already use: architecture decision records,
         runbooks and post-incident reviews.</p>
 
+      <p class="intro"><strong>Start with three things.</strong> They work from the first session, before you
+        write a single wiki page.</p>
       <div class="grid">
         <div class="feature">
           <h3>Rules first, every session</h3>
@@ -348,10 +360,20 @@ EmberOps.psm1 — cited by 1 decision (ACCEPTED), 2 incidents, 1 runbook</pre>
         </div>
         <div class="feature">
           <h3>Answers, not file dumps</h3>
-          <p>A lookup returns a few ranked hits with <code>path:line</code>. The agent then opens one section or one
-            function instead of a whole file.</p>
+          <p>From the first session, a lookup searches your docs and code symbols and returns a few ranked hits with
+            <code>path:line</code>. The agent then opens one section or one function instead of a whole file.</p>
           <p><code>find</code> · <code>page</code> · <code>outline</code> · <code>sym --body</code></p>
         </div>
+        <div class="feature">
+          <h3>What the wiki says about a file</h3>
+          <p>Before an edit, the agent sees the decisions, incidents and gotchas that cite the file, with their
+            verdicts. It has more to say as you record them.</p>
+          <p><code>memcrumbs about deploy.ps1</code></p>
+        </div>
+      </div>
+      <p class="intro tier"><strong>When you need more.</strong> Everything else is optional, and each part
+        works on its own.</p>
+      <div class="grid">
         <div class="feature">
           <h3>It knows when it may be wrong</h3>
           <p>Every hit carries its age and status, and says when the code a page cites changed after the page was last
@@ -359,10 +381,10 @@ EmberOps.psm1 — cited by 1 decision (ACCEPTED), 2 incidents, 1 runbook</pre>
           <p><code>v12d</code> · <code>STALE</code> · <code>SRC-CHANGED 3d</code></p>
         </div>
         <div class="feature">
-          <h3>What the wiki says about a file</h3>
-          <p>Before an edit, the agent sees the decisions, incidents and gotchas that cite the file, with their
-            verdicts.</p>
-          <p><code>memcrumbs about deploy.ps1</code></p>
+          <h3>You approve, in the session</h3>
+          <p>Rules and gotchas the agent drafts wait for you. Type <code>/memcrumbs-review</code>: the agent shows each line,
+            and Claude Code's permission prompt asks you before the approval runs.</p>
+          <p><code>/memcrumbs-review</code></p>
         </div>
         <div class="feature">
           <h3>One current value per fact</h3>
@@ -375,12 +397,6 @@ EmberOps.psm1 — cited by 1 decision (ACCEPTED), 2 incidents, 1 runbook</pre>
           <p>It suggests merges, missing pages, pages for questions the wiki could not answer and permission prompts for
             gotchas. Each applies only on your yes and undoes byte for byte.</p>
           <p><code>suggest</code> · <code>suggest undo ID</code></p>
-        </div>
-        <div class="feature">
-          <h3>You approve, in the session</h3>
-          <p>Rules and gotchas the agent drafts wait for you. Type <code>/memcrumbs-review</code>: the agent shows each line,
-            and Claude Code's permission prompt asks you before the approval runs.</p>
-          <p><code>/memcrumbs-review</code></p>
         </div>
         <div class="feature">
           <h3>Skills from work you repeat</h3>
@@ -458,6 +474,13 @@ reviewed 1 item(s)</pre></figure>
         <table>
           <thead><tr><th scope="col">Result</th><th scope="col">What it measures</th><th scope="col">How</th></tr></thead>
           <tbody>
+            <tr><td class="num">0.75</td><td>Share of questions answered in the top 3 on a public repository, before any
+                wiki page is written</td>
+                <td class="how">encode/httpx at <code>b5addb64</code>: 32 held-out questions written by a separate agent, run
+                once with <code>scripts/day0.py</code> (code questions: 0.90)</td></tr>
+            <tr><td class="num">377 vs 2,410</td><td>Tokens per answer on that repository, against reading the one file
+                that holds the answer</td>
+                <td class="how">Mean per <code>find</code> answer, and the median size of the answering file, characters ÷ 4</td></tr>
             <tr><td class="num">0.95</td><td>Share of questions whose answer is in the top 3 hits (recall@3)</td>
                 <td class="how">40 held-out questions, written by a separate agent that never saw the search engine, on the invented sample project</td></tr>
             <tr><td class="num">≈ 450</td><td>Tokens per lookup answer</td>
@@ -471,8 +494,10 @@ reviewed 1 item(s)</pre></figure>
           </tbody>
         </table>
       </div>
-      <p class="note">The sample project is invented, so your numbers will differ. <code>memcrumbs bench</code> measures
-        recall on your own questions; the setup guide shows how to write them.</p>
+      <p class="note">httpx is a real public repository; its questions, results and the way to rerun them are in
+        <a href="https://github.com/mikedconcepcion/memcrumbs/tree/main/bench/httpx">bench/httpx</a>. The sample project is invented, so your numbers will differ.
+        <code>memcrumbs bench</code> measures recall on your own questions; the setup guide shows how to write
+        them.</p>
     </section>
 
     <section id="safe" aria-labelledby="safe-h">
@@ -537,6 +562,11 @@ reviewed 1 item(s)</pre></figure>
         <p>Auto-memory is notes an agent keeps for itself. memcrumbs keeps a curated wiki with age and status on every answer,
           searched on demand instead of loaded in full. It can also offer to replace auto-memory notes the wiki already holds
           with a pointer to the page.</p></details>
+      <details><summary>How useful is it on a repository with no wiki yet?</summary>
+        <p>From the first session, <code>find</code> searches the repository's own docs and code symbols. On httpx, before
+          any wiki page was written, the answer was in the top 3 for 75% of 32 questions written blind (90% of the code
+          questions), at about 380 tokens per answer; reading the one file that holds the answer costs a median of 2,410
+          tokens. Rules, gotchas and decisions you add make it better from there.</p></details>
       <details><summary>Does it use embeddings or a vector database?</summary>
         <p>No. Search is SQLite FTS5 with BM25 ranking, a small thesaurus, your own synonyms and identifier splitting. On the
           sample project's held-out questions, 95% of answers are in the top 3 hits.</p></details>
@@ -554,7 +584,7 @@ reviewed 1 item(s)</pre></figure>
       <a href="https://github.com/mikedconcepcion/memcrumbs/blob/main/SECURITY.md">Security</a>
       <a href="https://github.com/mikedconcepcion/memcrumbs/issues/new/choose">Report a bug</a>
     </nav>
-    <span class="right">Version 0.5.0 · alpha</span>
+    <span class="right">Version 0.5.1 · alpha</span>
   </footer>
 </div>
 

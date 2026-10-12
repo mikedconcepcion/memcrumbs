@@ -1,0 +1,201 @@
+# httpx day-0 questions, written blind (the writer never saw the search tool). Repo: encode/httpx @ b5addb64.
+
+# ---------- howto (docs) ----------
+
+[[q]]
+id = "doc-01"
+q = "how can I show a progress bar while pulling down a huge file?"
+expect = ["docs/advanced/clients.md#monitoring download progress"]
+category = "howto"
+
+[[q]]
+id = "doc-02"
+q = "I need to talk to the Docker daemon over its local socket file, how do I set that up?"
+expect = ["docs/advanced/transports.md#HTTP Transport"]
+category = "howto"
+
+[[q]]
+id = "doc-03"
+q = "how do I exercise my Flask app from tests without running a real server?"
+expect = ["docs/advanced/transports.md#WSGI Transport"]
+category = "howto"
+
+[[q]]
+id = "doc-04"
+q = "how do I fetch a new access token and retry automatically when the API answers 401?"
+expect = ["docs/advanced/authentication.md#custom authentication schemes"]
+category = "howto"
+
+[[q]]
+id = "doc-05"
+q = "how do I make the client trust the operating system's certificates instead of the bundled certifi ones?"
+expect = ["docs/advanced/ssl.md#configuring client instances"]
+category = "howto"
+
+[[q]]
+id = "doc-06"
+q = "can I plug in my own function that runs on every response, e.g. to raise on any 4xx/5xx?"
+expect = ["docs/advanced/event-hooks.md"]
+category = "howto"
+
+[[q]]
+id = "doc-07"
+q = "work only gives us a socks5 proxy; what do I install and how do I point the client at it?"
+expect = ["docs/advanced/proxies.md#SOCKS"]
+category = "howto"
+
+[[q]]
+id = "doc-08"
+q = "how do I pass an upstream response through a Starlette endpoint chunk by chunk without buffering it?"
+expect = ["docs/async.md#streaming responses"]
+category = "howto"
+
+[[q]]
+id = "doc-09"
+q = "I want to watch the TCP connect and TLS handshake steps while debugging a request"
+expect = ["docs/logging.md", "docs/advanced/extensions.md#trace"]
+category = "howto"
+
+[[q]]
+id = "doc-10"
+q = "how do I switch on the newer binary protocol and check whether a response actually used it?"
+expect = ["docs/http2.md"]
+category = "howto"
+
+[[q]]
+id = "doc-11"
+q = "an old site sends no charset and its pages aren't utf-8; can httpx guess the right encoding?"
+expect = ["docs/advanced/text-encodings.md#auto-detection"]
+category = "howto"
+
+[[q]]
+id = "doc-12"
+q = "I must connect to a server by raw IP but still have the certificate checked against its real hostname"
+expect = ["docs/advanced/extensions.md#sni_hostname"]
+category = "howto"
+
+# ---------- code (httpx/) ----------
+
+[[q]]
+id = "code-01"
+q = "where does the client drop credentials when a redirect sends us to a different host?"
+expect = ["httpx/_client.py"]
+category = "code"
+
+[[q]]
+id = "code-02"
+q = "where are the proxy-bypass host lists from environment variables parsed into routing rules?"
+expect = ["httpx/_utils.py"]
+category = "code"
+
+[[q]]
+id = "code-03"
+q = "where does the library unpack compressed response bodies like gzip or brotli?"
+expect = ["httpx/_decoders.py"]
+category = "code"
+
+[[q]]
+id = "code-04"
+q = "where is the random separator string for file-upload form bodies generated?"
+expect = ["httpx/_multipart.py"]
+category = "code"
+
+[[q]]
+id = "code-05"
+q = "which code computes the hashed challenge response for digest login, MD5 or SHA-256?"
+expect = ["httpx/_auth.py"]
+category = "code"
+
+[[q]]
+id = "code-06"
+q = "where do low-level httpcore errors get converted into the public exception classes?"
+expect = ["httpx/_transports/default.py"]
+category = "code"
+
+[[q]]
+id = "code-07"
+q = "testing my ASGI app, its streamed response arrives all at once; which code causes that?"
+expect = ["httpx/_transports/asgi.py"]
+category = "code"
+
+[[q]]
+id = "code-08"
+q = "where does the library hide auth tokens when you print a headers object?"
+expect = ["httpx/_models.py"]
+category = "code"
+
+[[q]]
+id = "code-09"
+q = "which function serialises the json= argument into request bytes and picks its content type?"
+expect = ["httpx/_content.py"]
+category = "code"
+
+[[q]]
+id = "code-10"
+q = "where are the command-line tool's flags like --download and --no-verify defined?"
+expect = ["httpx/_main.py"]
+category = "code"
+
+# ---------- behaviour / defaults / configuration ----------
+
+[[q]]
+id = "beh-01"
+q = "what are the default caps on total connections and idle kept-alive connections in the pool?"
+expect = ["docs/advanced/resource-limits.md", "httpx/_config.py"]
+category = "behaviour"
+
+[[q]]
+id = "beh-02"
+q = "how many redirect hops will a client follow before it gives up with an error?"
+expect = ["httpx/_config.py"]
+category = "behaviour"
+
+[[q]]
+id = "beh-03"
+q = "does httpx pick up proxy settings from my shell, and how do I make it ignore them?"
+expect = ["docs/environment_variables.md"]
+category = "behaviour"
+
+[[q]]
+id = "beh-04"
+q = "which headers does a client send by default, and what does it use as the user agent?"
+expect = ["httpx/_client.py"]
+category = "behaviour"
+
+[[q]]
+id = "beh-05"
+q = "is there a hard limit on how long a URL is allowed to be?"
+expect = ["httpx/_urlparse.py"]
+category = "behaviour"
+
+# ---------- history / troubleshooting ----------
+
+[[q]]
+id = "hist-01"
+q = "after upgrading, JSON bodies we post lost their spaces and our snapshot tests broke; why?"
+expect = ["CHANGELOG.md"]
+category = "history"
+
+[[q]]
+id = "hist-02"
+q = "passing proxies= to Client now fails with an unexpected keyword; what replaced it and when?"
+expect = ["CHANGELOG.md"]
+category = "history"
+
+[[q]]
+id = "hist-03"
+q = "HTTPS calls through our corporate proxy time out during the TLS handshake, plain http works fine"
+expect = ["docs/troubleshooting.md"]
+category = "history"
+
+[[q]]
+id = "hist-04"
+q = "porting from requests: client.delete() won't take json=, how do I send a body with a DELETE?"
+expect = ["docs/compatibility.md#request body on HTTP methods"]
+category = "history"
+
+[[q]]
+id = "hist-05"
+q = "setting HTTPX_LOG_LEVEL used to turn on logging, now it does nothing; what changed?"
+expect = ["CHANGELOG.md"]
+category = "history"
