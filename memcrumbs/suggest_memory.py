@@ -62,10 +62,6 @@ def _words(text):
     return {w for w in re.findall(r"[a-z0-9]{4,}", text.lower()) if w not in STOPWORDS}
 
 
-def _norm(line):
-    return " ".join(re.sub(r"[^\w]+", " ", line.lower()).split())
-
-
 def _store(project):
     if not project.index_path.exists():
         return None
@@ -101,13 +97,20 @@ def _pointer(index_text, link_line, page_stem, keep_words=False):
     return index_text.replace(link_line, new, 1), new
 
 
-def _note_body(note_text, page, page_title):
+def _note_body(note_text, page, page_title, missing):
+    """The note as a pointer plus `missing`: its content lines that `coverage` found outside the page, the same
+    test the offer's evidence states. Paragraph breaks between kept lines stay."""
     meta_end = markdown.frontmatter(note_text)[2]
     lines = note_text.splitlines()
     head, body = lines[:meta_end], lines[meta_end:]
-    have = _norm(read_text(page))
-    extra = [ln for ln in body if ln.strip() and not ln.lstrip().startswith("#") and len(_norm(ln)) > 12
-             and _norm(ln) not in have]
+    extra = []
+    for ln in body:
+        if ln in missing:
+            extra.append(ln)
+        elif not ln.strip() and extra and extra[-1]:
+            extra.append("")
+    while extra and not extra[-1]:
+        extra.pop()
     nl = "\r\n" if "\r\n" in note_text else "\n"
     out = head + ["", "This note now lives in the wiki: `memcrumbs page %s` (%s)." % (shq(page.stem), page_title)]
     if extra:
@@ -153,7 +156,8 @@ def _memory(project, cheap_only=False):
                 title = str(markdown.frontmatter(page_text)[0].get("title") or page.stem)
                 words = lost_words(m.group(4), page_text)
                 new_index, new_line = _pointer(index_text, line, page.stem, keep_words=bool(words))
-                new_note = _note_body(note_text, page, title)
+                missing = set(content) - set(covered)
+                new_note = _note_body(note_text, page, title, missing)
                 saved = (len(line) - len(new_line)) // 4
                 gain = ("≈ %d tokens less in every session's index" % saved if saved >= SAVES else
                         "one place for it: the note body, read only on demand, points at the page")
@@ -166,7 +170,8 @@ def _memory(project, cheap_only=False):
                         project.rel(page), len(covered), len(content)),
                      "note %d → %d characters" % (len(note_text), len(new_note))],
                     risk="writes-outside-wiki", changes=[(index, new_index), (note, new_note)],
-                    agent="move the 'not in the wiki yet' lines into %s, then delete them from the note" % page.stem,
+                    agent=("move the 'not in the wiki yet' lines into %s, then delete them from the note" % page.stem
+                           if missing else "nothing to move: the page holds every line of the note"),
                     score=1 + len(note_text) / 1000))
     finally:
         store.close()

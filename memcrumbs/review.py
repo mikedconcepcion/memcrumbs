@@ -63,7 +63,9 @@ def confirm(what, project=None, cmd=None):
 
 
 def line_id(line):
-    return hashlib.sha256(" ".join(line.split()).encode("utf-8")).hexdigest()[:10]
+    """A line's identity: its words, without a gotcha's hit mark (counting a bite keeps it reviewed)."""
+    from memcrumbs.gotcha_hits import strip
+    return hashlib.sha256(" ".join(strip(line).split()).encode("utf-8")).hexdigest()[:10]
 
 
 def _path(project):

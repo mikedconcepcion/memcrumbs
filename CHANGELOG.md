@@ -3,6 +3,53 @@
 What changed for users, newest first. Versions follow [semver](https://semver.org/) from 1.0; before 1.0 the
 command line and config may still change, and every such change is listed here.
 
+## [0.5.4] — 2026-10-15
+
+### Added
+
+- **Paste error text into `find` as it is.**
+  - It tries the exact text first, and the message after an exception's name, so a recorded incident leads.
+  - When the text is not recorded, it says so: "exact text not recorded; the hits below only share words", or no
+    hits. Either way, the failure is new.
+  - The wired instructions now send error text to `find` first, then to Grep for where it is raised.
+- **`memcrumbs check` runs your bench** (`wiki/bench.toml`) and explains each question it answered last time but
+  misses now. It shows the expected page's rank, the page now first, and the fix for each cause: sharpen or
+  supersede the old page, or `memcrumbs bench --expect-add ID PAGE`. It adds about a second for 60 questions.
+- **Repeated traps are counted.**
+  - `memcrumbs gotcha --add "<line>"` records a first bite under `## More`.
+  - `memcrumbs gotcha --hit "<words>"` counts the next one.
+  - At two bites, the line is offered for `## Top`, along with the Top line to merge or demote.
+  - `check` notes a Top line that has not bitten in 90 days.
+- **Skills leave a short note each time they are used.**
+  - `memcrumbs log "<outcome>" --skill NAME` writes a dated journal line and prints `skill NAME used: …`. Skills
+    that memcrumbs scaffolds end with that step.
+  - `memcrumbs skills` lists each skill's uses in the last 30 days, its last use and its last note.
+  - `--page` keeps that list in `wiki/skills.md`.
+- **Routine skills can be scheduled, if you want.**
+  - A skill used at a steady pace is offered for scheduling.
+  - `memcrumbs schedule add NAME` adds it to Task Scheduler or cron, and Claude Code asks you first. `--print`
+    only shows the command.
+  - A skill with its own `run` script spends no tokens. Otherwise each run is a Claude Code session, which you
+    accept with `--agent`.
+  - Skills that push, publish or deploy are never scheduled.
+  - A failed run shows in the session header until you look.
+- **An optional development reference.**
+  - After `memcrumbs init`, once per machine, you can point to a folder with your principles, pick a short starter
+    (software development, agile or lean), or skip.
+  - A personal Claude Code skill (`dev-reference`) points the agent at it.
+  - About once a week, the header shows one line from it.
+  - If you also turn on the reflection, `memcrumbs reflect` counts how the work goes across your projects: commits,
+    open decisions and tokens, counts only. A project opts out with `[reference] reflect = false`.
+
+### Changed
+
+- **Offered skills have readable names**, such as `test-scan-and-push` or `push-and-watch-ci`, instead of a hash.
+- **A memory pointer offer** no longer lists lines the page already holds in other words as "not in the wiki yet".
+- **Claude Code now asks you before** `schedule add`, `schedule remove`, `reference set` and `reference reflect`.
+  `memcrumbs update` or `init` brings existing wiring up to date.
+- **When you have turned on transcript reading**, it also keeps the names of the skills and slash commands you used,
+  and each reply's token counts. The cache is rebuilt once.
+
 ## [0.5.3] — 2026-10-13
 
 ### Changed

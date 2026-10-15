@@ -6,7 +6,7 @@ description: Look up project knowledge (rules, runbooks, gotchas, decisions, inc
 
 **Look up project knowledge first; grep for exact names.** For rules, decisions, incidents, runbooks, how-to in the
 docs and anything you do not know the name of yet, `memcrumbs find` first. When you already know the exact name (a
-function, class, setting or error text), search for it directly with Grep, or `memcrumbs sym` for a symbol: a lookup
+function, class or setting), search for it directly with Grep, or `memcrumbs sym` for a symbol: a lookup
 first only adds a step. Every command prints a small, capped result with `path:line`, age and status.
 
 | Need | Command |
@@ -31,7 +31,11 @@ first only adds a step. Every command prints a small, capped result with `path:l
 
 Then Read only the lines you need (`offset`/`limit` from the pointer). Add `--json` to any read command for scripts.
 
-**Query with 2–4 distinctive words** (names, nouns, error text), not a whole sentence. After a miss, retry with the
+**Error text: paste it whole** (`memcrumbs find "sqlite3.OperationalError: database is locked"`). `find` tries the
+exact text first, so a recorded incident leads. "exact text not recorded; the hits below only share words", or no
+hits, means the failure is new: then Grep the code for where it is raised, and record it once it is understood.
+
+**Query with 2–4 distinctive words** (names, nouns), not a whole sentence. After a miss, retry with the
 nouns only, then narrow with `kind:runbook`, `kind:decision`, `status:rejected` or `path:<folder>`.
 `find --explain "<words>"` shows how a query was read. In a worktree or a copy of the repo, pass `-p NAME` (the
 project name is in the memcrumbs block of CLAUDE.md).
@@ -63,6 +67,9 @@ session, read the last journal lines (`memcrumbs status`) before going on.
 - `verified:` = the date you checked the facts against the live system or code — `memcrumbs verify <page>` when you re-check.
 - Update the page once at the end of a task, not after every step. Put dated events in the journal (`memcrumbs log`).
 - Gotchas go in `gotchas.md` `## Top` (one line, most expensive first, link the detail page); standing rules in `rules.md` `## Top`.
+- A trap that bit: if a gotcha line names it, `memcrumbs gotcha --hit "<words of the line>"`; if not, `memcrumbs
+  gotcha --add "<the trap, one line>"`. At two bites memcrumbs offers the line for the header; never move it yourself.
+- When you used a skill, leave its one-line note: `memcrumbs log "<outcome>" --skill <name>`.
 - A current value (version, port, host) lives once in `facts.md` (`| key | value | about | source | verified |`); elsewhere write `{{fact:key}}`.
 - Never write secret values (passwords, keys, tokens) — write *where* they live. `memcrumbs check` flags secret-looking text.
 - New rules and gotchas reach the session header after the owner approves them (the memcrumbs-review skill). Never

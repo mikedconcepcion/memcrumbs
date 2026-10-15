@@ -8,9 +8,13 @@ project (public or private) with no code changes.
     category = "runbook"                        # optional; results are also broken down by category
 
 A hit matches an expected path when its file path ends with it (`wiki/x.md`, `repo/app.py`); `path#Section`
-also requires the hit's section to contain that text. Tokens are the `find` output's chars/4 (estimate)."""
+also requires the hit's section to contain that text. Tokens are the `find` output's chars/4 (estimate).
+
+Error text that nothing records is asked with `new = true` and no `expect`: the right answer says so ("not
+recorded", or no hits). Those questions are reported apart and stay out of recall."""
 import io
 import json
+import re
 import time
 import tomllib
 from contextlib import redirect_stdout
@@ -18,15 +22,16 @@ from pathlib import Path
 
 from memcrumbs import cmd_read, writeset
 from memcrumbs.output import Out, est_tokens
-from memcrumbs.util import posix
+from memcrumbs.util import posix, read_doc
 
 
 def load(path):
     with open(path, "rb") as f:
         qs = tomllib.load(f).get("q", [])
     for i, q in enumerate(qs):
-        if not q.get("q") or not q.get("expect"):
-            raise SystemExit("bench: question %d needs q and expect" % (i + 1))
+        if not q.get("q") or not (q.get("expect") or q.get("new")):
+            raise SystemExit("bench: question %d needs q and expect (or new = true)" % (i + 1))
+        q.setdefault("expect", [])
         q.setdefault("id", "q%d" % (i + 1))
     return qs
 
@@ -45,7 +50,7 @@ def run(project, store, questions, k=8):
     rows = []
     for q in questions:
         t0 = time.perf_counter()
-        hits = store.search(q["q"], kinds=q.get("kinds"), limit=k)
+        hits = cmd_read.lookup(store, q["q"], q.get("kinds"), k)[0]
         ms = (time.perf_counter() - t0) * 1000
         buf = io.StringIO()
         with redirect_stdout(buf):                                 # the exact text an agent would read
@@ -55,9 +60,12 @@ def run(project, store, questions, k=8):
         rank = next((i + 1 for i, h in enumerate(hits) if _match(h, q["expect"])), None)
         followed = next((i + 1 for i, h in enumerate(hits) if _match(h, q["expect"]) or
                          (h.get("see") and _match(h["see"], q["expect"]))), None)
-        rows.append(dict(id=q["id"], q=q["q"], category=q.get("category", ""), paraphrase=bool(q.get("paraphrase")),
-                         rank=rank, followed=followed, ms=round(ms, 1), tokens=est_tokens(len(buf.getvalue())),
+        rows.append(dict(id=q["id"], q=q["q"], expect=q["expect"], category=q.get("category", ""),
+                         paraphrase=bool(q.get("paraphrase")), rank=rank, followed=followed, ms=round(ms, 1), tokens=est_tokens(len(buf.getvalue())),
                          top3=[project.rel(h["path"]) for h in hits[:3]]))
+        if q.get("new"):
+            text = buf.getvalue()
+            rows[-1].update(new=True, labelled=cmd_read.NOT_RECORDED in text or "no hits for" in text)
     return rows
 
 
@@ -78,23 +86,51 @@ def default_path(project):
     return project.wiki / "bench.toml"
 
 
+def _target(project, e):
+    """A page name or a file, as the path an `expect` holds."""
+    from memcrumbs.curate import exact_page
+    try:
+        return project.rel(exact_page(project, e))
+    except SystemExit:
+        p = Path(e).expanduser().resolve()
+        if not p.exists():
+            raise SystemExit("memcrumbs: no page or file %r" % e)
+        try:
+            return posix(p.relative_to(project.dir))
+        except ValueError:
+            return posix(p)
+
+
+def expect_add(out, project, qid, page):
+    """Add a page to one question's `expect` (a newer page that answers it better): a one-line edit."""
+    path = default_path(project)
+    target = _target(project, page)
+    text = read_doc(path)[0] if path.exists() else ""
+    blocks = re.split(r"(?m)^(?=\[\[q\]\])", text)
+    for i, b in enumerate(blocks):
+        if not re.search(r'(?m)^id\s*=\s*"%s"\s*$' % re.escape(qid), b):
+            continue
+        m = re.search(r"(?m)^(expect\s*=\s*\[)(.*)\](.*)$", b)
+        if not m:
+            raise SystemExit("memcrumbs: %s has no one-line expect in %s; edit it by hand" % (qid, project.rel(path)))
+        if json.dumps(target) in m.group(2):
+            out("%s already expects %s" % (qid, target))
+            return
+        items = m.group(2).strip()
+        blocks[i] = b[:m.start()] + "%s%s%s]%s" % (m.group(1), items + ", " if items else "", json.dumps(target),
+                                                   m.group(3)) + b[m.end():]
+        writeset.write_text(project, path, "".join(blocks), read_doc(path)[1])
+        out.set(id=qid, expect_added=target)
+        out("%s now also expects %s (%s)" % (qid, target, project.rel(path)))
+        return
+    raise SystemExit("memcrumbs: no question %s in %s" % (qid, project.rel(path)))
+
+
 def add(out, project, question, expects, category=""):
     """Record a question the wiki should answer, with the file(s) that do. Run it when a lookup missed."""
-    from memcrumbs.curate import exact_page
     if not expects:
         raise SystemExit("memcrumbs: --add needs --expect <page or file>")
-    targets = []
-    for e in expects:
-        try:
-            targets.append(project.rel(exact_page(project, e)))
-        except SystemExit:
-            p = Path(e).expanduser().resolve()
-            if not p.exists():
-                raise SystemExit("memcrumbs: no page or file %r" % e)
-            try:
-                targets.append(posix(p.relative_to(project.dir)))
-            except ValueError:
-                targets.append(posix(p))
+    targets = [_target(project, e) for e in expects]
     path = default_path(project)
     head = "" if path.exists() else ("# Questions this wiki must answer (memcrumbs bench). Added with "
                                       "`memcrumbs bench --add`.\n")
@@ -113,13 +149,15 @@ def report(out, project, store, path, min_recall3=None, k=8):
         raise SystemExit("memcrumbs: no questions at %s — record real ones with: memcrumbs bench --add \"<question>\" "
                          "--expect <page>" % posix(path))
     rows = run(project, store, load(path), k)
+    new = [r for r in rows if r.get("new")]
+    rows = [r for r in rows if not r.get("new")]
     total = _agg(rows)
     cats = {c: _agg([r for r in rows if r["category"] == c]) for c in sorted({r["category"] for r in rows if r["category"]})}
     para = _agg([r for r in rows if r["paraphrase"]])
     misses = [r for r in rows if not r["rank"] or r["rank"] > 3]
     out.list_key = "questions"
     out.set(project=project.name, questions_file=posix(path), total=total, by_category=cats, paraphrase=para,
-            questions=rows)
+            questions=rows + new, unrecorded=dict(n=len(new), labelled=sum(1 for r in new if r["labelled"])))
     out.hint("memcrumbs bench %s --json --full" % posix(path))
     out("bench %s · %d questions · recall@1 %.3f · recall@3 %.3f · MRR %.3f" % (
         project.name, total["n"], total["recall_at_1"], total["recall_at_3"], total["mrr"]))
@@ -132,6 +170,11 @@ def report(out, project, store, path, min_recall3=None, k=8):
         out("  %-12s n=%-3d r@1 %.2f  r@3 %.2f" % (c, a["n"], a["recall_at_1"], a["recall_at_3"]))
     for r in misses:
         out("miss %s (rank %s): %s → %s" % (r["id"], r["rank"] or "-", r["q"], ", ".join(r["top3"]) or "no hits"))
+    if new:
+        out("unrecorded error text: %d · said so: %d" % (len(new), sum(1 for r in new if r["labelled"])))
+    for r in new:
+        if not r["labelled"]:
+            out("unlabelled %s: %s → %s" % (r["id"], r["q"], ", ".join(r["top3"]) or "no hits"))
     if min_recall3 is not None and total["recall_at_3"] < min_recall3:
         out("FAIL: recall@3 %.3f < %.3f" % (total["recall_at_3"], min_recall3))
         return 1

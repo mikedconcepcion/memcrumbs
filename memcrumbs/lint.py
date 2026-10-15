@@ -154,6 +154,15 @@ def check(out, project, api, baseline=False, show_all=False, strict=False, dupes
     if dupes:
         from memcrumbs import dupes as near
         findings += near.findings(project)
+    from memcrumbs import bench_watch, gotcha_hits
+    try:
+        findings += bench_watch.findings(project, api)
+    except OSError as e:
+        findings.append(("W", "wiki/bench.toml", "the bench did not run: %s" % type(e).__name__))
+    try:
+        findings += gotcha_hits.findings(project)
+    except OSError:
+        pass
     order = {"E": 0, "W": 1, "I": 2}
     findings.sort(key=lambda f: (order.get(f[0], 3), f[1], f[2]))
     try:

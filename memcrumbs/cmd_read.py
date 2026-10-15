@@ -3,7 +3,7 @@ every hit carries its path:line, age and status."""
 from pathlib import Path
 
 from memcrumbs import cites, freshness, markdown, outline as ol, rank, usage
-from memcrumbs.query import split_filters, term_pairs, wants_code, wants_procedure
+from memcrumbs.query import error_phrases, filter_text, split_filters, term_pairs, wants_code, wants_procedure
 from memcrumbs.store import WIKI_KINDS
 from memcrumbs.guard import instruction_like
 from memcrumbs.util import clip, posix, read_text, shq, split_lines
@@ -38,8 +38,26 @@ def explain(out, store, q):
     out.set(explain=dict(terms=explained, filters=filters, intent=intent, long_question=long))
 
 
-def find(out, project, store, q, kinds=None, limit=8, track=True):
+NOT_RECORDED = "exact text not recorded; the hits below only share words"
+
+
+def lookup(store, q, kinds=None, limit=8):
+    """(hits, exact). Pasted error text is tried as an exact phrase first, and its hits lead. `exact` is None for
+    other queries, True when the text is recorded, False when the hits only share words with it."""
     hits = store.search(q, kinds=kinds, limit=limit)
+    phrases = error_phrases(split_filters(q)[0])
+    if not phrases:
+        return hits, None
+    for p in phrases:
+        exact = store.search(('"%s" %s' % (p.replace('"', ""), filter_text(q))).strip(), kinds=kinds, limit=limit)
+        if exact:
+            seen = {(h["path"], h["loc"]) for h in exact}
+            return (exact + [h for h in hits if (h["path"], h["loc"]) not in seen])[:limit], True
+    return hits, False
+
+
+def find(out, project, store, q, kinds=None, limit=8, track=True):
+    hits, exact = lookup(store, q, kinds, limit)
     if track:
         usage.record_hits(project, [project.rel(h["path"]) for h in hits if h["kind"] in WIKI_KINDS])
     out.list_key = "hits"
@@ -57,14 +75,19 @@ def find(out, project, store, q, kinds=None, limit=8, track=True):
             if cited[h["path"]] and not any(r.get("cited_by") for r in rows if r["path"] == rows[-1]["path"]):
                 rows[-1]["cited_by"] = cited[h["path"]]
     out.set(query=q, hits=rows)
+    if exact is not None:
+        out.set(exact=exact)
     if track:
         from memcrumbs import suggest_gaps                 # opt-in, local: a lookup the wiki could not answer
         if suggest_gaps.enabled(project) and suggest_gaps.unanswered(hits, suggest_gaps.floor(project)):
             suggest_gaps.log(project, q, len(rows))
     out.hint("memcrumbs page <name> \"<section>\" · find -n %d" % (limit * 2))
     if not rows:
-        out("no hits for %r — try fewer or other words, or -k wiki,code,doc" % q)
+        out("no hits for %r: the error text is not recorded, so the failure is new" % q if exact is False else
+            "no hits for %r — try fewer or other words, or -k wiki,code,doc" % q)
         return
+    if exact is False:
+        out(NOT_RECORDED)
     for r in rows:
         head = r["title"] + (" › " + r["section"] if r["section"] else "")
         out("[%s] %s — %s:%s%s" % (LABEL.get(r["kind"], r["kind"][:4]), clip(head, 90), r["path"], r["line"],

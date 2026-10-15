@@ -53,6 +53,9 @@ transcripts = false                     # read ~/.claude/projects/<repo>/*.jsonl
 query_log = false                       # log the text of lookups the wiki could not answer (.memcrumbs/gaps.jsonl)
 gap_cover = 0.4                         # a wiki hit answers a lookup when it holds this share of the query's information
 
+[reference]                             # the machine-wide reflection (memcrumbs reference reflect on)
+reflect = true                          # false: this project is never counted by memcrumbs reflect
+
 [update]                                # opt-in
 notify = false                          # check PyPI once a day (after slow commands); the header says when a newer
                                         # release is out. `memcrumbs update` works either way

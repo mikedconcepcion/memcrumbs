@@ -5,7 +5,7 @@ import os
 from pathlib import Path
 
 from memcrumbs import markdown, project as proj, rank, synonyms
-from memcrumbs.query import term_pairs, wants_code, wants_procedure, wants_tests
+from memcrumbs.query import error_phrases, term_pairs, wants_code, wants_procedure, wants_tests
 from memcrumbs.sources import split_ident
 from memcrumbs.verdicts import row_status, row_verdicts, verdict
 from test_cli import ProjectCase, run
@@ -139,3 +139,41 @@ class RepoOnDayZero(ProjectCase):
         self.assertTrue(wants_tests("which tests cover redirects") and not wants_tests("test my app in unit tests"))
         self.assertIn("gzip", split_ident("GZipDecoder").split())
         self.assertIn("ipv6", split_ident("IPv6Address").split())
+
+
+class ErrorText(ProjectCase):
+    """Pasted error text is tried as an exact phrase first; hits that only share words say so."""
+
+    def setUp(self):
+        super().setUp()
+        (self.wiki / "outage.md").write_text("---\ntitle: Bookings stopped at night\nsummary: the backup held the "
+                                             "database\n---\n# Outage\nThe site answered with \"database is locked\" "
+                                             "until the backup copy ended.\n", encoding="utf-8")
+        (self.wiki / "locks.md").write_text("---\ntitle: Lock files\nsummary: which tools lock what\n---\n# Locks\n"
+                                            "The editor locks the database schema file while it is open; an error "
+                                            "there is harmless.\n", encoding="utf-8")
+        run(["-p", "t", "index"])
+
+    def find(self, q):
+        return run(["-p", "t", "find", q])[1], json.loads(run(["-p", "t", "find", q, "--json"])[1])
+
+    def test_what_is_error_shaped(self):
+        self.assertEqual(error_phrases("sqlite3.OperationalError: database is locked"),
+                         ["sqlite3.OperationalError: database is locked", "database is locked"])
+        for q in ("Task result 0x1 at night", "OSError: [Errno 28] No space left", "HTTP 503 from the proxy"):
+            self.assertTrue(error_phrases(q), q)
+        for q in ("how do I fix the database lock error", "database locked?", "deploy the web app", "error log",
+                  '"database is locked" again'):
+            self.assertEqual(error_phrases(q), [], q)                   # a question, no error, too short, quoted
+
+    def test_a_recorded_error_leads_and_a_new_one_says_so(self):
+        text, data = self.find("sqlite3.OperationalError: database is locked")
+        self.assertTrue(data["exact"])
+        self.assertTrue(data["hits"][0]["path"].endswith("outage.md"))
+        self.assertNotIn("not recorded", text)
+        text, data = self.find("PermissionError: the database is locked by another user")
+        self.assertFalse(data["exact"])
+        self.assertIn("exact text not recorded; the hits below only share words", text)
+        text = self.find("ZeroDivisionError: integer division by zero in the scheduler")[0]
+        self.assertIn("the error text is not recorded, so the failure is new", text)
+        self.assertNotIn("exact", self.find("how do I fix the database lock error")[1])   # a question: as before

@@ -49,7 +49,7 @@ class Suggestion:
 def suggesters(project, api=None):
     from memcrumbs import suggest_wiki
     found = dict(suggest_wiki.SUGGESTERS)
-    for mod in ("suggest_guard", "suggest_gaps", "suggest_memory", "suggest_skill"):
+    for mod in ("suggest_guard", "suggest_gaps", "suggest_memory", "suggest_skill", "gotcha_hits", "schedule"):
         try:
             found.update(__import__("memcrumbs." + mod, fromlist=["SUGGESTERS"]).SUGGESTERS)
         except ImportError:

@@ -12,7 +12,7 @@ from memcrumbs.store import IndexBroken, Locked, Store
 from memcrumbs.util import posix, utf8_stdout
 
 READS = ("find", "page", "sym", "bench", "about")
-SCAN_AFTER = ("check", "index", "dashboard", "doctor", "log", "decision", "incident", "verify", "supersede")
+SCAN_AFTER = ("check", "index", "dashboard", "doctor", "log", "decision", "incident", "verify", "supersede", "gotcha")
 
 
 def _kinds(s):
@@ -138,10 +138,33 @@ def run(args, project, api):
         owner_gate(project, args)
         if c == "status":
             _status(out, project, api)
+        elif c == "schedule":
+            from memcrumbs import schedule
+            if args.action and not args.name:
+                raise SystemExit("memcrumbs: schedule %s needs the skill's name" % args.action)
+            if args.action == "add":
+                schedule.add(out, project, args.name, args.every, args.at, args.agent, args.print_only)
+            elif args.action == "remove":
+                schedule.remove(out, project, args.name)
+            elif args.action == "run":
+                code = schedule.run(out, project, args.name)
+            else:
+                schedule.show(out, project)
+        elif c == "skills":
+            from memcrumbs import skill_use
+            skill_use.command(out, project, args.page, args.days)
+        elif c == "gotcha":
+            from memcrumbs import gotcha_hits
+            if args.hit:
+                gotcha_hits.hit(out, project, args.hit)
+            elif args.add:
+                gotcha_hits.add(out, project, args.add)
+            else:
+                gotcha_hits.show(out, project)
         elif c in ("log", "decision", "incident", "verify", "supersede"):
             from memcrumbs import cmd_write, curate
             if c == "log":
-                cmd_write.log(out, project, " ".join(args.text), args.tag)
+                cmd_write.log(out, project, " ".join(args.text), args.tag, args.skill)
             elif c == "decision":
                 curate.decision(out, project, args.title, args.status, args.why, args.tag, args.considered,
                                 args.evidence, args.revisit_if)
@@ -179,9 +202,12 @@ def run(args, project, api):
         elif c == "doctor":
             from memcrumbs import doctor
             code = doctor.run(out, project, api, args.share)
-        elif c == "bench" and args.add:
+        elif c == "bench" and (args.add or args.expect_add):
             from memcrumbs import bench
-            bench.add(out, project, args.add, args.expect, args.category)
+            if args.add:
+                bench.add(out, project, args.add, args.expect, args.category)
+            else:
+                bench.expect_add(out, project, *args.expect_add)
         elif c == "wire":
             from memcrumbs import wire
             wire.wire(out, project, args.repo, _kinds(args.target), args.apply, args.remove, args.user_skill, args.allow)
@@ -243,6 +269,9 @@ def run(args, project, api):
         suggest.maybe_scan(project, api)
         lint.maybe_check(project)                # the daily secret check: its count reaches the header
         update.maybe_check(project)              # opt-in ([update] notify): at most once a day
+        from memcrumbs import reflect, skill_use
+        skill_use.maybe_refresh(project)         # wiki/skills.md, when the owner made it
+        reflect.maybe_refresh()                  # opt-in: the cross-project counts, at most once a week
     return code
 
 
@@ -271,6 +300,22 @@ def _main(argv):
                 return setup_repo.init(out, args)
             elif c == "template":
                 cmd_setup.template(out)
+            elif c == "reference":
+                from memcrumbs import reference
+                owner_gate(project, args)            # set and reflect are the owner's decision
+                if args.action == "set" and args.value:
+                    reference.set_(out, args.value)
+                elif args.action == "reflect" and args.value in ("on", "off"):
+                    reference.reflect_switch(out, args.value == "on")
+                elif args.action in ("set", "reflect"):
+                    raise SystemExit("memcrumbs: reference set PATH|software|agile|lean · reference reflect on|off")
+                elif args.action:
+                    getattr(reference, args.action)(out)
+                else:
+                    reference.show(out)
+            elif c == "reflect":
+                from memcrumbs import reflect
+                reflect.command(out)
             elif c == "update":
                 from memcrumbs import update
                 chosen = name or os.environ.get("MEMCRUMBS_PROJECT")

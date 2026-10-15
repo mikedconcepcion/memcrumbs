@@ -2,8 +2,9 @@
 
 Look up project knowledge here first: rules, decisions, incidents, runbooks, how-to in the docs, and anything you
 do not know the name of yet (results are small and capped, with path:line, age and status). When you already know
-the exact name (a function, class, setting or error text), search for it directly with Grep, or `sym` for a symbol.
+the exact name (a function, class or setting), search for it directly with Grep, or `sym` for a symbol.
 - `memcrumbs -p {name} find "<2-4 distinctive words>"` — wiki, runbooks, decisions, incidents, docs, code symbols
+- `memcrumbs -p {name} find "<error text, pasted whole>"` — tried as the exact text first; "not recorded" means the failure is new (then Grep the code for where it is raised)
 - `memcrumbs -p {name} page <name> [section]` — one page or one section · `memcrumbs -p {name} outline <file>` — symbols + line ranges, then Read only that range
 - `memcrumbs -p {name} sym <name> [--body]` — where a function is defined · `memcrumbs -p {name} log "<note>"` — dated journal line
 

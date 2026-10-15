@@ -303,6 +303,26 @@ class MemoryPointers(ProjectCase):
             self.assertIn("9090", " ".join(mig[0]["evidence"]))
 
 
+    def test_lines_reworded_into_the_page_are_not_offered_to_move(self):
+        note = self.mem / "deploy_notes.md"
+        note.write_text("---\nname: deploy\ndescription: how we ship the booking app\n---\n"
+                        "Then check the version banner and the health endpoint, after the deploy script ran on the web "
+                        "server.\n\nRun it on the web server: the deploy script.\n", encoding="utf-8")   # reworded
+        with mock.patch.object(Path, "home", return_value=self.home):
+            found = json.loads(run(["-p", "t", "suggest", "--kind", "memory", "--json"])[1])["suggestions"]
+            self.assertEqual(len(found), 1)
+            self.assertIn("2 of 2 content lines are in that page", found[0]["evidence"][0])
+            self.assertIn("nothing to move", run(["-p", "t", "suggest", "show", found[0]["id"]])[1])
+            run(["-p", "t", "suggest", "apply", found[0]["id"], "--outside-wiki"])
+            self.assertNotIn("Not in the wiki yet", note.read_text(encoding="utf-8"))  # evidence and patch agree
+
+    def test_kept_lines_keep_their_paragraphs(self):
+        from memcrumbs.suggest_memory import _note_body
+        text = "---\nname: n\n---\nFirst kept line here.\nsecond kept line here\n\nThird kept line, later.\n"
+        body = _note_body(text, Path("deploy.md"), "Deploy", {"First kept line here.", "Third kept line, later."})
+        self.assertIn("move these there, then delete them here):\nFirst kept line here.\n\nThird kept line, later.\n",
+                      body)
+
     def test_links_out_of_the_memory_folder_are_never_followed(self):
         outside = self.mem.parent / "escape.md"
         outside.write_text("Run the deploy script on the web server, then check the health endpoint.\n", encoding="utf-8")
@@ -378,6 +398,7 @@ class Flows(ProjectCase):
             flow = next(s for s in found if "pipeline" in s["why"])
             self.assertIn("build.py → unittest discover → npm run package → gh release", flow["why"])
             self.assertIn("in 3 tasks on 3 days", flow["why"])
+            self.assertIn("scaffold the skill build-test-and-release:", flow["action"])   # readable, not a hash
             for glue in ("ls", "git status", "cat", "echo"):
                 self.assertNotIn(glue + " ", flow["why"].split(" ran in ")[0] + " ")
             run(["-p", "t", "suggest", "apply", flow["id"], "--outside-wiki", "--name", "ship it"])
@@ -410,6 +431,16 @@ class Flows(ProjectCase):
             ["export.py", "unittest discover", "memcrumbs scan", "memcrumbs index", "npm run build", "gh run",
              "git tag", ""])
         self.assertTrue(all(suggest_flow.noise(x) for x in ("ls", "git status", "memcrumbs find", "rm", "sleep")))
+
+    def test_skills_get_readable_names(self):
+        from memcrumbs.skill_names import readable
+        self.assertEqual(readable(["unittest discover", "memcrumbs scan", "git add", "git commit", "git push"]),
+                         ("test-scan-and-push", "Test, scan and push"))
+        self.assertEqual(readable(["git add", "git commit", "git push", "gh run"])[0], "push-and-watch-ci")
+        self.assertEqual(readable(["gh run", "git tag", "git push", "curl"]),
+                         ("tag-and-check-after-ci", "Tag and check, after CI"))
+        self.assertEqual(readable(["export_public.py", "git push"])[0], "export-public-and-push")
+        self.assertEqual(readable(["git push", "gh run"], used={"push-and-watch-ci"})[0], "push-and-watch-ci-2")
 
 
 class Skills(ProjectCase):

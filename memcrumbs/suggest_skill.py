@@ -9,15 +9,17 @@ Sources (deterministic, no model):
 
 memcrumbs scaffolds; it never writes the steps. `apply` writes `.claude/skills/NAME/SKILL.md` in the repo with a
 name, pointers to wiki pages and the counts; the session's agent writes the steps after the owner's yes, from
-what `suggest show` lists. No command text from transcripts goes into a file. A live or destructive procedure
-defaults to `disable-model-invocation: true` (only the owner starts it, and its description costs nothing).
+what `suggest show` lists. The skill's name is read from the steps' names (a tool and its subcommand, a script's
+stem: `skill_names`); no other command text from transcripts (arguments, paths, hosts) goes into a file. A live or
+destructive procedure defaults to `disable-model-invocation: true` (only the owner starts it, and its description
+costs nothing).
 Apply-time options: `--name NAME`, `--owner-only`, `--agent-may-use`. Unused skills: the host's `/skill-doctor`."""
 import re
 from collections import Counter
 from dataclasses import replace
 from pathlib import Path
 
-from memcrumbs import markdown, transcripts
+from memcrumbs import markdown, skill_names, transcripts
 from memcrumbs.suggest import Suggestion
 from memcrumbs.util import read_text, shq
 
@@ -159,9 +161,14 @@ def statuses(events):
     return {h: (n, len(days[h])) for h, n in runs.items() if n >= MIN_RUNS and len(days[h]) >= MIN_SESSIONS}
 
 
-def _short(key):
-    import hashlib
-    return hashlib.sha1(key.encode("utf-8")).hexdigest()[:6]
+def _named(book, steps, used):
+    """(name, title): a matching runbook's name, else one read from the steps (`skill_names`); unique in `used`."""
+    if book and slug(book) not in used:
+        name, title = slug(book), "Run the %s runbook" % book.replace("-", " ")
+    else:
+        name, title = skill_names.readable(steps, used)
+    used.add(name)
+    return name, title
 
 
 def slug(text):
@@ -184,6 +191,8 @@ def scaffold(name, title, evidence, pages, owner_only):
               "(the agent writes the steps; facts stay in the wiki and are pointed to, not copied)"]
     if pages:
         lines += ["", "## Wiki", ""] + ["- `memcrumbs page %s`" % shq(p) for p in pages]
+    lines += ["", "## When done", "", "Leave a one-line note of the outcome (it goes to the wiki journal and the "
+              "terminal):", "`memcrumbs log \"<what happened, one line>\" --skill %s`" % name]
     return "\n".join(lines) + "\n"
 
 
@@ -241,9 +250,7 @@ def _flows(project, evs, sequences_offered, used):
         if any(f["own"] <= c for c in covered):
             continue
         book = _runbook(project, " ".join(steps))
-        name = slug(book) if book and slug(book) not in used else "flow-" + _short("flow:" + " > ".join(steps))
-        used.add(name)
-        title = ("Run the %s runbook" % book.replace("-", " ")) if book else "A repeated %s" % what
+        name, title = _named(book, steps, used)
         more = " (and %d variant(s))" % (f["forms"] - 1) if f["forms"] > 1 else ""
         s = _skill(project, "skill", "flow:" + " > ".join(steps), "the %s %s ran in %d tasks on %d day%s%s" % (
                    what, " → ".join(steps), f["tasks"], f["days"], "s" if f["days"] != 1 else "", more),
@@ -267,10 +274,7 @@ def _skills(project, cheap_only=False):
         for gram, (runs, sess, days, forms, steps) in sorted(sequences(evs).items(),
                                                              key=lambda kv: -kv[1][0] * kv[1][2]):
             book = _runbook(project, " ".join(steps))
-            # named after the runbook it points to (a wiki name); otherwise neutral: no transcript text in a file
-            name = slug(book) if book and slug(book) not in used else "procedure-" + _short("seq:" + " > ".join(gram))
-            used.add(name)
-            title = ("Run the %s runbook" % book.replace("-", " ")) if book else "A repeated project procedure"
+            name, title = _named(book, gram, used)
             more = " (and %d longer or partial form(s) of it; steps seen: %s)" % (forms - 1, ", ".join(steps)) \
                 if forms > 1 else ""
             s = _skill(project, "skill", "seq:" + " > ".join(gram), "the sequence %s ran %d times in %d sessions on %d "
@@ -280,10 +284,11 @@ def _skills(project, cheap_only=False):
             if s:
                 out.append(s)
         for h, (runs, days) in sorted(statuses(evs).items(), key=lambda kv: -kv[1][0] * kv[1][1]):
-            name = "status-" + _short("status:" + h)
+            name, title = skill_names.unique(skill_names.slug(h + " status"), used), "Status check with %s" % h
+            used.add(name)
             s = _skill(project, "skill", "status:" + h, "a status query (%s) ran %d times on %d days" % (h, runs, days),
                        "scaffold a status skill %s (a script or skill beats repeating it; a schedule is up to you)"
-                       % name, "%d runs on %d days" % (runs, days), name, "A repeated status check", [], False,
+                       % name, "%d runs on %d days" % (runs, days), name, title, [], False,
                        runs * days, cheap=True)
             if s:
                 out.append(s)

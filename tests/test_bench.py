@@ -63,6 +63,18 @@ class RecallGate(BenchCase):
         self.assertGreaterEqual(total["recall_at_3"], MIN_RECALL3, total)
         self.assertLessEqual(total["tokens_p95"], 600, total)          # find stays in the 300-600 token band
 
+    def test_error_text_recorded_and_new(self):
+        st = Store(self.project.index_path)
+        try:
+            with contextlib.redirect_stdout(io.StringIO()):
+                out = Out("bench", None, self.project.redact)
+                bench.report(out, self.project, st, BENCH / "errors.toml")
+        finally:
+            st.close()
+        self.assertEqual(out.data["total"]["recall_at_1"], 1.0, out.data["total"])
+        new = out.data["unrecorded"]
+        self.assertEqual((new["n"], new["labelled"]), (4, 4))            # a new failure is never dressed as a match
+
     def test_holdout_is_reported(self):
         total = self.recall("holdout.toml")                            # written after tuning; tracked, not tuned
         self.assertGreaterEqual(total["recall_at_3"], 0.80, total)

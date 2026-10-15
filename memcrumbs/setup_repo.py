@@ -48,10 +48,14 @@ def _interactive(out):
     return not out.json and sys.stdin.isatty() and sys.stdout.isatty()
 
 
-def _ask(out, question, default):
-    if out.lines:                                    # what was said so far comes before the question
+def _flush(out):
+    if out.lines:                                    # what was said so far comes before a question
         print("\n".join(safe(out.redact, ln) for ln in out.lines), flush=True)
         out.lines = []
+
+
+def _ask(out, question, default):
+    _flush(out)
     try:
         answer = input("%s [%s] " % (question, "Y/n" if default else "y/N")).strip().lower()
     except EOFError:
@@ -135,6 +139,8 @@ def init(out, args):
     fails, warns = _doctor(project, api)
     out("doctor: %d fail, %d warn%s" % (fails, warns, " (memcrumbs doctor)" if fails or warns else ""))
     out.set(project=project.name, repo=posix(repo), created=fresh, wired=bool(wired), doctor=dict(fail=fails, warn=warns))
+    from memcrumbs import reference
+    reference.after_init(out, _interactive(out))     # once per machine, optional
     out(_next(wired, fails))
     return 0
 

@@ -1,0 +1,51 @@
+# Error text pasted as it is, unquoted: `find` tries it as an exact phrase first.
+# Recorded strings expect the page that records them; strings nothing records are `new = true`, and the right
+# answer says the text is not recorded.
+
+[[q]]
+id = "er-01"
+category = "error"
+q = "sqlite3.OperationalError: database is locked"
+expect = ["wiki/incidents/2026-07-11-bookings-db-locked-by-backup.md"]
+
+[[q]]
+id = "er-02"
+category = "error"
+q = "sqlite3.OperationalError: disk I/O error"
+expect = ["wiki/incidents/2026-08-16-disk-full-web-srv.md"]
+
+[[q]]
+id = "er-03"
+category = "error"
+q = "the task finishes in 0 seconds with result 0x1"
+expect = ["wiki/incidents/2026-07-29-bom-breaks-scheduled-task.md"]
+
+[[q]]
+id = "er-04"
+category = "error"
+q = "BookingWeb answered 500 with database is locked"
+expect = ["wiki/incidents/2026-07-11-bookings-db-locked-by-backup.md"]
+
+[[q]]
+id = "er-05"
+category = "error"
+q = "OSError: [Errno 28] No space left on device"
+new = true
+
+[[q]]
+id = "er-06"
+category = "error"
+q = "PermissionError: [WinError 5] Access is denied: 'C:\\kiln\\fire.log'"
+new = true
+
+[[q]]
+id = "er-07"
+category = "error"
+q = "requests.exceptions.ConnectTimeout: HTTP 504 gateway timed out"
+new = true
+
+[[q]]
+id = "er-08"
+category = "error"
+q = "ControllerError: controller on port COM3 did not answer within 5 s"
+new = true

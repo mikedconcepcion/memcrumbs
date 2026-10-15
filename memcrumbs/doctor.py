@@ -21,12 +21,13 @@ from memcrumbs.store import SCHEMA_VERSION, IndexBroken, Locked, Store
 from memcrumbs.util import posix, read_text
 
 SCHEMA = {"": {"name", "title", "wiki", "repos", "plugins", "code", "docs", "security", "search", "check", "status",
-               "facts", "suggest", "review", "update"},
+               "facts", "suggest", "review", "update", "reference"},
           "code": {"roots", "include", "exclude"}, "docs": {"name", "root", "include", "exclude", "kind"},
           "security": {"never_index", "secret_keys"}, "search": {"synonyms", "thesaurus", "thesaurus_remove"},
           "check": {"max_lines", "stale_days"},
           "status": {"sections", "max_tokens", "max_chars", "rules", "map_lines", "gotchas", "journal", "style_rules"},
-          "facts": {"page", "bind"}, "suggest": {"transcripts", "query_log", "gap_cover"}, "review": {"gate_header"}, "update": {"notify"}}
+          "facts": {"page", "bind"}, "suggest": {"transcripts", "query_log", "gap_cover"}, "review": {"gate_header"}, "update": {"notify"},
+          "reference": {"reflect"}}
 HOOK_SLOW_MS, HOOK_FAIL_MS = 1500, 5000
 
 

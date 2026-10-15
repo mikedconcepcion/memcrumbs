@@ -117,6 +117,36 @@ def term_pairs(q, table=TABLE):
     return [(_expr(alts, prefix), _expr(alts[:1], prefix)) for alts, prefix, _ in terms(q, table)]
 
 
+def filter_text(q):
+    """The query's inline filters (`kind:x status:y`), as typed."""
+    return " ".join(m.group(0) for m in _FILTER.finditer(q))
+
+
+# pasted error text: an error code, or an error word among at least three words, and not a question
+ERROR_CODE = re.compile(r"(?i)\b0x[0-9a-f]{1,8}\b|\berrno\s*\d+|\bwinerror\s*\d+|\bhttp(?:/[\d.]+)?\s+[45]\d\d\b|"
+                        r"\b[45]\d\d\s+(?:error|not found|forbidden|unauthori[sz]ed|bad request|bad gateway|service "
+                        r"unavailable|gateway time-?out|internal server error)\b")
+ERROR_WORD = re.compile(r"(?i)(?:error|exception)\b|\b(?:failed|failure|fatal|denied|refused|locked|timed out|"
+                        r"traceback|cannot|can't|unable|no such)\b")
+QUESTION = re.compile(r"(?i)^\s*(?:how|what|why|where|which|when|who|whose|is|are|was|were|do|does|did|can|could|"
+                      r"should|would|will)\b|\?\s*$")
+
+
+def error_phrases(q):
+    """Pasted error text as exact phrases to try first: the whole text, then what follows each `: ` (the message
+    after an exception's name), longest first. [] when the query is not error-shaped or already quotes a phrase."""
+    text = " ".join(q.split())
+    if '"' in text or QUESTION.search(text) or len(_tokens(text)) < 3 or \
+            not (ERROR_CODE.search(text) or ERROR_WORD.search(text)):
+        return []
+    parts, out = text.split(": "), [text]
+    for i in range(1, len(parts)):
+        tail = ": ".join(parts[i:]).strip()
+        if len(_tokens(tail)) >= 2 and tail not in out:
+            out.append(tail)
+    return out
+
+
 def clean(q):
     """A NUL or other control character in a query would end the FTS5 string early: they become spaces."""
     return "".join(" " if ord(c) < 32 else c for c in q)

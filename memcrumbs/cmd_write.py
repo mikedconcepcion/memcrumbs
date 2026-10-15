@@ -1,6 +1,7 @@
 """log (dated journal line) and scan (secret scan of a folder, a file, or a built sdist/wheel)."""
 import datetime as dt
 import os
+import re
 import tarfile
 import zipfile
 from pathlib import Path
@@ -12,7 +13,12 @@ from memcrumbs.util import posix, read_text, split_lines
 SKIP_DIRS = {".git", "node_modules", "__pycache__", ".memcrumbs", ".venv", "venv", ".tox"}
 
 
-def log(out, project, text, tag=None):
+def log(out, project, text, tag=None, skill=None):
+    """A dated line in the wiki journal. With `skill`, the note a skill leaves when it is used: `skill NAME: text
+    #skill`, which `memcrumbs skills` counts."""
+    said = project.redact(" ".join(text.split()))
+    if skill:
+        text, tag = "skill %s: %s" % (skill_name(skill), text), tag or "skill"
     now = dt.datetime.now()
     f = project.wiki / "journal" / now.strftime("%Y-%m.md")
     if not f.exists():
@@ -26,7 +32,16 @@ def log(out, project, text, tag=None):
                             (" #" + tag) if tag else "")
     writeset.append_text(project, f, line)
     out.set(path=project.rel(f), line=line.strip())
+    if skill:
+        out.set(skill=skill_name(skill))
+        out("skill %s used: %s (logged -> %s)" % (skill_name(skill), said, project.rel(f)))
+        return
     out("logged -> %s" % project.rel(f))
+
+
+def skill_name(name):
+    """A skill's name as its folder is named: lowercase words joined by '-'."""
+    return re.sub(r"[^a-z0-9:_-]+", "-", name.strip().lower().lstrip("/")).strip("-") or "skill"
 
 
 def recent_journal(project, n=3):

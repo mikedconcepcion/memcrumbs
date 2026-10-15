@@ -64,6 +64,9 @@ def _file_section(project, fname, heading, n, name=""):
     seg = [ln for ln in (lines[span[0] + 1: span[1]] if span else lines) if ln.strip()]
     from memcrumbs import review
     seg, waiting = review.gate(project, name, seg)          # standing lines show once a human reviewed them
+    if name == "gotchas":
+        from memcrumbs.gotcha_hits import strip
+        seg = [strip(ln) for ln in seg]                      # hit counts stay in the page, out of the header
     age = freshness.days_since(meta.get("verified"))
     src = project.rel(path) + (" · v%dd" % age if age is not None else "")
     return dict(lines=seg[:n], more=len(seg) - min(n, len(seg)), src=src, cmd="memcrumbs page %s" % shq(path.stem),
@@ -207,6 +210,14 @@ def status(out, project, api, counts=None, stale=None, unreviewed=0):
     newer = update.header_line(project)                    # opt-in; read from the stored daily check
     if newer:
         head.append(newer)
+    from memcrumbs import schedule
+    failed = schedule.header_line(project)                 # a scheduled run failed and nobody looked yet
+    if failed:
+        head.append(failed)
+    from memcrumbs import reference, reflect
+    for extra in (reference.header_line(project), reflect.header_line()):   # opt-in: a weekly line, a ping
+        if extra:
+            head.append(extra)
     text, cut = render(head, secs, budget)
     if not out.json:
         out.cap = budget + 400                   # the layout above already fits the budget; this is a backstop

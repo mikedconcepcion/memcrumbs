@@ -1,8 +1,8 @@
 """Opt-in, local reading of the host's session transcripts: `[suggest] transcripts =
 true` in memcrumbs.toml. Only shapes are kept, redacted: the first words of each shell command with its day, the
 files the agent read or edited, memcrumbs lookups, and where the user's messages fall (task boundaries, no
-text). Nothing derived from transcripts enters the wiki, the header (beyond
-a count) or a shared report.
+text), the names of the skills and slash commands used, and each reply's token counts. Nothing derived from
+transcripts enters the header (beyond a count) or a shared report; the wiki gets skill names and counts only.
 
 Claude Code keeps one folder per working directory under ~/.claude/projects/, named by the path with every
 non-alphanumeric character turned into '-'; sessions started in a repo or below it are read. Each file is parsed
@@ -16,7 +16,8 @@ from memcrumbs import writeset
 from memcrumbs.util import read_text
 
 WINDOW_DAYS = 30
-CACHE_VERSION = 4                 # bump when what is kept per call changes
+CACHE_VERSION = 6                 # bump when what is kept per call changes
+SLASH = re.compile(r"<command-name>/?([\w.:-]+)</command-name>")
 WORDS = 12                        # words kept per command part: enough to match a permission rule, no more
 NESTED = re.compile(r"^(powershell|pwsh|powershell\.exe|pwsh\.exe|bash|sh|cmd|cmd\.exe|ssh|plink|invoke-command)\b.*['\"]", re.I)
 SHELLS = ("Bash", "PowerShell")
@@ -119,10 +120,10 @@ def _said(ev, content):
 
 def _parse(path, redact, since):
     """[(day, session, kind, value)] from one transcript file."""
-    out = []
+    out, seen = [], set()
     with open(path, encoding="utf-8", errors="replace") as f:
         for ln in f:
-            if '"tool_use"' not in ln and '"user"' not in ln:
+            if '"tool_use"' not in ln and '"user"' not in ln and '"usage"' not in ln:
                 continue
             try:
                 ev = json.loads(ln)
@@ -134,8 +135,15 @@ def _parse(path, redact, since):
             sess = str(ev.get("sessionId") or path.stem)
             msg = ev.get("message")
             content = msg.get("content") if isinstance(msg, dict) else None
+            used = _tokens(msg, seen)
+            if used:
+                out.append((day, sess, "tokens", used))
             if _said(ev, content):
                 out.append((day, sess, "task", ""))
+                m = SLASH.search(content if isinstance(content, str) else " ".join(
+                    b.get("text", "") for b in content if isinstance(b, dict) and isinstance(b.get("text"), str)))
+                if m:                                    # a slash command the user typed: its name, no text
+                    out.append((day, sess, "slash", m.group(1)[:80]))
                 continue
             for b in content if isinstance(content, list) else []:
                 if not isinstance(b, dict) or b.get("type") != "tool_use" or not isinstance(b.get("input"), dict):
@@ -153,12 +161,30 @@ def _parse(path, redact, since):
                     out.append((day, sess, "read", inp["file_path"].replace("\\", "/")))
                 elif name in EDITS:
                     out.append((day, sess, "edit", ""))
+                elif name == "Skill" and isinstance(inp.get("skill"), str):
+                    out.append((day, sess, "skill", inp["skill"][:80]))     # its name only, never its arguments
     return out
 
 
-def events(project, days=WINDOW_DAYS):
-    """Every event of the last `days` days, oldest first. [] when transcripts are not opted in."""
-    if not enabled(project):
+def _tokens(msg, seen):
+    """"input,output,cache reads" tokens of a model reply, once per reply (a reply is written as several lines that repeat its
+    usage), or ''."""
+    if not isinstance(msg, dict) or not isinstance(msg.get("usage"), dict) or msg.get("role") not in (None, "assistant"):
+        return ""
+    mid = msg.get("id")
+    if mid in seen:
+        return ""
+    seen.add(mid)
+    u = msg["usage"]
+    num = (lambda k: u.get(k) if isinstance(u.get(k), int) else 0)
+    tin, cached = num("input_tokens") + num("cache_creation_input_tokens"), num("cache_read_input_tokens")
+    return "%d,%d,%d" % (tin, num("output_tokens"), cached) if tin or cached or num("output_tokens") else ""
+
+
+def events(project, days=WINDOW_DAYS, opted=False):
+    """Every event of the last `days` days, oldest first. [] when transcripts are not opted in (`opted`: the
+    caller holds its own opt-in, the machine-wide reflection)."""
+    if not (opted or enabled(project)):
         return []
     since = (dt.date.today() - dt.timedelta(days=days)).isoformat()
     cache_path = project.data / "transcripts.json"

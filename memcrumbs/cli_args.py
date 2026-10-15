@@ -2,7 +2,7 @@
 import argparse
 
 # commands that run without a configured project
-NO_PROJECT = ("init", "template", "outline", "scan", "update")
+NO_PROJECT = ("init", "template", "outline", "scan", "update", "reference", "reflect")
 
 
 def build_parser(extra=None, errors=None):
@@ -41,9 +41,29 @@ def build_parser(extra=None, errors=None):
     s.add_argument("--in", dest="path_like")
     s.add_argument("--body", action="store_true", help="print the first match's source")
     s.add_argument("-n", type=int, default=10)
+    s = add("gotcha", help="count a known trap's repeats: --add a first bite, --hit a repeat; alone, the counts")
+    g = s.add_mutually_exclusive_group()
+    g.add_argument("--hit", metavar="WORDS", help="words of the gotcha line that bit again")
+    g.add_argument("--add", metavar="LINE", help="a trap that bit for the first time: a new line under ## More")
     s = add("log", help="append a dated line to the wiki journal")
     s.add_argument("text", nargs="+")
     s.add_argument("--tag")
+    s.add_argument("--skill", metavar="NAME", help="the note a skill leaves when it is used (memcrumbs skills counts it)")
+    s = add("schedule", help="routine skills in the OS scheduler: list; add/remove (the owner's decision); run")
+    s.add_argument("action", nargs="?", choices=("add", "remove", "run"))
+    s.add_argument("name", nargs="?", help="the skill (its folder name in .claude/skills)")
+    s.add_argument("--every", help="daily, weekdays, weekly[:mon], or Nd (2-30); default: the routine seen")
+    s.add_argument("--at", default="09:00", help="HH:MM (default 09:00)")
+    s.add_argument("--agent", action="store_true", help="no run script: each run is a Claude Code session (tokens)")
+    s.add_argument("--print", dest="print_only", action="store_true", help="only print the command to run by hand")
+    s = add("reference", help="your development reference (machine-wide, optional): set PATH|software|agile|lean, "
+                              "reflect on|off, refresh, skip, off")
+    s.add_argument("action", nargs="?", choices=("set", "reflect", "refresh", "skip", "off"))
+    s.add_argument("value", nargs="?", help="set: a folder or a starter; reflect: on or off")
+    add("reflect", help="how the work goes across your projects, counted (opt-in: memcrumbs reference reflect on)")
+    s = add("skills", help="the project's skills: uses in the last 30 days, the last use, the last note")
+    s.add_argument("--page", action="store_true", help="also keep the table in the wiki page skills.md")
+    s.add_argument("--days", type=int, default=30)
     s = add("decision", help="capture a decision or research verdict with a status")
     s.add_argument("title")
     s.add_argument("--status", required=True, choices=("accepted", "rejected", "parked", "superseded"))
@@ -109,6 +129,8 @@ def build_parser(extra=None, errors=None):
     s.add_argument("--add", metavar="QUESTION", help="record a question the wiki should answer (wiki/bench.toml)")
     s.add_argument("--expect", action="append", default=[], help="with --add: the page or file that answers it")
     s.add_argument("--category", default="", help="with --add")
+    s.add_argument("--expect-add", nargs=2, metavar=("ID", "PAGE"),
+                   help="add a page to a question's expect (a newer page that answers it better)")
     s = add("plan", help="wiki refresh plan: what needs an agent, why, est. tokens; approve with a budget")
     s.add_argument("action", nargs="?", choices=("next",), help="next: the next approved page (for the agent)")
     s.add_argument("--approve", metavar="PAGES", help="comma list of pages, top:N or all")

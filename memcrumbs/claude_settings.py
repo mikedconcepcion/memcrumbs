@@ -20,7 +20,9 @@ from memcrumbs.util import newline_of, read_text
 READ_ONLY = ("find", "page", "outline", "sym", "status", "about", "fact")   # never log/decision/incident/verify/plan
 SHELLS = ("Bash", "PowerShell")                              # Claude Code on Windows runs commands via PowerShell
 OWNER = (("review", "--approve"), ("quarantine", "--lift"), ("suggest", "apply"), ("suggest", "undo"),
-         ("plan", "--approve"), ("init", "--remove"))        # the owner's decisions: Claude Code asks before each
+         ("plan", "--approve"), ("init", "--remove"), ("schedule", "add"), ("schedule", "remove"),
+         ("reference", "set"), ("reference", "reflect"))
+# the owner's decisions above: Claude Code asks before each
 
 
 def hook_command(project):
@@ -54,6 +56,8 @@ def decision(args):
         return "suggest", args.action
     if c == "init" and getattr(args, "remove", False):
         return "init", "--remove"
+    if c in ("schedule", "reference") and getattr(args, "action", None) in ("add", "remove", "set", "reflect"):
+        return c, args.action
     return None
 
 
